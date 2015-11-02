@@ -38,7 +38,7 @@ type AWSConfig struct {
 	PrivateKeyPath   string
 	AvailabilityZone string
 	InstanceType     string
-	PrivateSubnet    AWSSubnet
+	BOSHSubnet       AWSSubnet
 	ElasticIP        string
 	SecurityGroup    string
 }
@@ -97,7 +97,7 @@ func (d Director) Generate() (Manifest, error) {
 		"region":                  d.AWSConfig.Region,
 	}
 
-	privateSubnet, err := convertSubnet(d.AWSConfig.PrivateSubnet)
+	privateSubnet, err := convertSubnet(d.AWSConfig.BOSHSubnet)
 	if err != nil {
 		return Manifest{}, err
 	}

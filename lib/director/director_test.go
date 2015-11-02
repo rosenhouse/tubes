@@ -42,7 +42,7 @@ var _ = Describe("Generating a deployment manifest for a BOSH Director", func() 
 		awsConfig = AWSConfig{
 			InstanceType:     "m3.xlarge",
 			AvailabilityZone: "AVAILABILITY-ZONE",
-			PrivateSubnet: AWSSubnet{
+			BOSHSubnet: AWSSubnet{
 				CIDR:     "10.0.0.0/24",
 				SubnetID: "SUBNET-ID",
 			},

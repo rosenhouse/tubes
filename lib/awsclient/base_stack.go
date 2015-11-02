@@ -18,7 +18,7 @@ type BaseStack struct {
 
 func (c *Client) GetBaseStackResources(stackName string) (BaseStack, error) {
 	output, err := c.CloudFormation.DescribeStackResources(&cloudformation.DescribeStackResourcesInput{
-		StackName: aws.String("foo"),
+		StackName: aws.String(stackName),
 	})
 	if err != nil {
 		return BaseStack{}, err

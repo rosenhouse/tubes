@@ -69,11 +69,18 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 		}))
 	})
 
+	It("should use the provided stack name to look up the stack resourceS", func() {
+		_, err := client.GetBaseStackResources("some-stack-name")
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(cloudFormationClient.DescribeStackResourcesCall.Receives.Input.StackName).To(Equal(aws.String("some-stack-name")))
+	})
+
 	It("should use the BOSH subnet ID from the stack to lookup details via EC2 API", func() {
 		_, err := client.GetBaseStackResources("some-stack-name")
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(ec2Client.DescribeSubnetsCall.Recieves.Input.SubnetIds).To(Equal([]*string{aws.String("subnet-12345")}))
+		Expect(ec2Client.DescribeSubnetsCall.Receives.Input.SubnetIds).To(Equal([]*string{aws.String("subnet-12345")}))
 	})
 
 	Context("error cases", func() {

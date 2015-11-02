@@ -13,7 +13,7 @@ type EC2Client struct {
 		}
 	}
 	DescribeSubnetsCall struct {
-		Recieves struct {
+		Receives struct {
 			Input *ec2.DescribeSubnetsInput
 		}
 		Returns struct {
@@ -29,6 +29,6 @@ func (c *EC2Client) DescribeImages(input *ec2.DescribeImagesInput) (*ec2.Describ
 }
 
 func (c *EC2Client) DescribeSubnets(input *ec2.DescribeSubnetsInput) (*ec2.DescribeSubnetsOutput, error) {
-	c.DescribeSubnetsCall.Recieves.Input = input
+	c.DescribeSubnetsCall.Receives.Input = input
 	return c.DescribeSubnetsCall.Returns.Output, c.DescribeSubnetsCall.Returns.Error
 }

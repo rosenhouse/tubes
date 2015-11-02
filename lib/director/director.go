@@ -31,16 +31,16 @@ type Software struct {
 }
 
 type AWSConfig struct {
-	InstanceType     string
-	AvailabilityZone string
-	PrivateSubnet    AWSSubnet
-	ElasticIP        string
-	PrivateKeyPath   string
+	Region           string
 	AccessKeyID      string
 	SecretAccessKey  string
 	PrivateKeyName   string
+	PrivateKeyPath   string
+	AvailabilityZone string
+	InstanceType     string
+	PrivateSubnet    AWSSubnet
+	ElasticIP        string
 	SecurityGroup    string
-	Region           string
 }
 
 type AWSSubnet struct {

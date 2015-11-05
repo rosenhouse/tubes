@@ -22,6 +22,10 @@ type ec2Client interface {
 
 type cloudformationClient interface {
 	DescribeStackResources(*cloudformation.DescribeStackResourcesInput) (*cloudformation.DescribeStackResourcesOutput, error)
+	DescribeStacks(*cloudformation.DescribeStacksInput) (*cloudformation.DescribeStacksOutput, error)
+	CreateStack(*cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error)
+	UpdateStack(*cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error)
+	DeleteStack(*cloudformation.DeleteStackInput) (*cloudformation.DeleteStackOutput, error)
 }
 
 type Client struct {
@@ -39,8 +43,10 @@ func New(c Config) *Client {
 
 	session := session.New(sdkConfig)
 	ec2Client := ec2.New(session)
+	cloudFormationClient := cloudformation.New(session)
 
 	return &Client{
-		EC2: ec2Client,
+		EC2:            ec2Client,
+		CloudFormation: cloudFormationClient,
 	}
 }

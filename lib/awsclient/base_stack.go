@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-type BaseStack struct {
+type BaseStackResources struct {
 	AvailabilityZone  string
 	BOSHSubnetCIDR    string
 	BOSHSubnetID      string
@@ -16,12 +16,12 @@ type BaseStack struct {
 	BOSHSecurityGroup string
 }
 
-func (c *Client) GetBaseStackResources(stackName string) (BaseStack, error) {
+func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, error) {
 	output, err := c.CloudFormation.DescribeStackResources(&cloudformation.DescribeStackResourcesInput{
 		StackName: aws.String(stackName),
 	})
 	if err != nil {
-		return BaseStack{}, err
+		return BaseStackResources{}, err
 	}
 
 	mapping := map[string]string{}
@@ -29,30 +29,30 @@ func (c *Client) GetBaseStackResources(stackName string) (BaseStack, error) {
 		mapping[*resource.LogicalResourceId] = *resource.PhysicalResourceId
 	}
 
-	baseStack := BaseStack{}
+	resources := BaseStackResources{}
 	var ok bool
-	baseStack.BOSHSubnetID, ok = mapping["BOSHSubnet"]
+	resources.BOSHSubnetID, ok = mapping["BOSHSubnet"]
 	if !ok {
-		return baseStack, errors.New("missing stack resource BOSHSubnet")
+		return resources, errors.New("missing stack resource BOSHSubnet")
 	}
-	baseStack.BOSHSecurityGroup, ok = mapping["BOSHSecurityGroup"]
+	resources.BOSHSecurityGroup, ok = mapping["BOSHSecurityGroup"]
 	if !ok {
-		return baseStack, errors.New("missing stack resource BOSHSecurityGroup")
+		return resources, errors.New("missing stack resource BOSHSecurityGroup")
 	}
-	baseStack.BOSHElasticIP, ok = mapping["MicroEIP"]
+	resources.BOSHElasticIP, ok = mapping["MicroEIP"]
 	if !ok {
-		return baseStack, errors.New("missing stack resource MicroEIP")
+		return resources, errors.New("missing stack resource MicroEIP")
 	}
 
 	dsOutput, err := c.EC2.DescribeSubnets(&ec2.DescribeSubnetsInput{
-		SubnetIds: []*string{aws.String(baseStack.BOSHSubnetID)},
+		SubnetIds: []*string{aws.String(resources.BOSHSubnetID)},
 	})
 	if err != nil {
-		return BaseStack{}, err
+		return BaseStackResources{}, err
 	}
 	subnet := *dsOutput.Subnets[0]
-	baseStack.AvailabilityZone = *subnet.AvailabilityZone
-	baseStack.BOSHSubnetCIDR = *subnet.CidrBlock
+	resources.AvailabilityZone = *subnet.AvailabilityZone
+	resources.BOSHSubnetCIDR = *subnet.CidrBlock
 
-	return baseStack, nil
+	return resources, nil
 }

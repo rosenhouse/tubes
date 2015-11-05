@@ -60,7 +60,7 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 		baseStack, err := client.GetBaseStackResources("some-stack-name")
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(baseStack).To(Equal(awsclient.BaseStack{
+		Expect(baseStack).To(Equal(awsclient.BaseStackResources{
 			AvailabilityZone:  "some-nat-az",
 			BOSHSubnetCIDR:    "10.11.12.13/24",
 			BOSHSubnetID:      "subnet-12345",

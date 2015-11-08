@@ -1,6 +1,9 @@
 package awsclient
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -49,4 +52,30 @@ func New(c Config) *Client {
 		EC2:            ec2Client,
 		CloudFormation: cloudFormationClient,
 	}
+}
+
+// ARN represents an Amazon Resource Name
+// http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
+type ARN struct {
+	Partition string
+	Service   string
+	Region    string
+	AccountID string
+	Resource  string
+}
+
+// ParseARN parses an ARN string into its component fields
+func (c Client) ParseARN(arn string) (ARN, error) {
+	const numExpectedParts = 6
+	parts := strings.SplitN(arn, ":", numExpectedParts)
+	if len(parts) < numExpectedParts {
+		return ARN{}, fmt.Errorf("malformed ARN %q", arn)
+	}
+	return ARN{
+		Partition: parts[1],
+		Service:   parts[2],
+		Region:    parts[3],
+		AccountID: parts[4],
+		Resource:  parts[5],
+	}, nil
 }

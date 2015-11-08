@@ -57,12 +57,15 @@ var _ = Describe("Integration", func() {
 	Describe("CloudFormation", func() {
 		Describe("UpdateStack", func() {
 			Context("when the stack does not exist", func() {
-				It("should succeed", func() {
-					_, err := client.CloudFormation.CreateStack(&cloudformation.CreateStackInput{
+				It("should error", func() {
+					_, err := client.CloudFormation.UpdateStack(&cloudformation.UpdateStackInput{
 						StackName:    aws.String(stackName),
 						TemplateBody: aws.String(templateBody),
 					})
-					Expect(err).NotTo(HaveOccurred())
+					Expect(err).To(HaveOccurred())
+					awserr := err.(awserr.Error)
+					Expect(awserr.Code()).To(Equal("ValidationError"))
+					Expect(awserr.Message()).To(ContainSubstring("does not exist"))
 				})
 			})
 		})

@@ -101,5 +101,18 @@ var _ = Describe("Integration", func() {
 				})
 			})
 		})
+		Describe("DescribeStackResources", func() {
+			Context("when the stack does not exist", func() {
+				It("should return a ValidationError error", func() {
+					_, err := client.CloudFormation.DescribeStackResources(&cloudformation.DescribeStackResourcesInput{
+						StackName: aws.String(stackName),
+					})
+					Expect(err).To(HaveOccurred())
+					awsErr := err.(awserr.Error)
+					Expect(awsErr.Code()).To(Equal("ValidationError"))
+					Expect(awsErr.Message()).To(ContainSubstring("does not exist"))
+				})
+			})
+		})
 	})
 })

@@ -34,7 +34,7 @@ const templateBody = `{
 }
 }`
 
-var _ = Describe("Integration", func() {
+var _ = Describe("AWS Enemy Tests", func() {
 	var (
 		client    *awsclient.Client
 		stackName string
@@ -55,23 +55,56 @@ var _ = Describe("Integration", func() {
 	})
 
 	Describe("CloudFormation", func() {
+
 		Describe("UpdateStack", func() {
 			Context("when the stack does not exist", func() {
-				It("should error", func() {
+				It("returns a ValidationError", func() {
 					_, err := client.CloudFormation.UpdateStack(&cloudformation.UpdateStackInput{
 						StackName:    aws.String(stackName),
 						TemplateBody: aws.String(templateBody),
 					})
 					Expect(err).To(HaveOccurred())
-					awsErr := err.(awserr.Error)
+					awsErr := err.(awserr.RequestFailure)
 					Expect(awsErr.Code()).To(Equal("ValidationError"))
+					Expect(awsErr.StatusCode()).To(Equal(400))
 					Expect(awsErr.Message()).To(Equal(fmt.Sprintf("Stack [%s] does not exist", stackName)))
 				})
 			})
+			Context("when the stack exists but there are no changes", func() {
+				BeforeEach(func() {
+					_, err := client.CloudFormation.CreateStack(&cloudformation.CreateStackInput{
+						StackName:    aws.String(stackName),
+						TemplateBody: aws.String(templateBody),
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(func() (string, error) {
+						output, err := client.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
+							StackName: aws.String(stackName),
+						})
+						if err != nil {
+							return "", err
+						}
+						return *output.Stacks[0].StackStatus, nil
+					}, "60s", "5s").Should(Equal("CREATE_COMPLETE"))
+				})
+				It("returns a ValidationError", func() {
+					_, err := client.CloudFormation.UpdateStack(&cloudformation.UpdateStackInput{
+						StackName:    aws.String(stackName),
+						TemplateBody: aws.String(templateBody),
+					})
+					Expect(err).To(HaveOccurred())
+					awsErr := err.(awserr.RequestFailure)
+					Expect(awsErr.Code()).To(Equal("ValidationError"))
+					Expect(awsErr.Message()).To(Equal("No updates are to be performed."))
+					Expect(awsErr.StatusCode()).To(Equal(400))
+				})
+			})
 		})
+
 		Describe("CreateStack", func() {
 			Context("when the stack already exists", func() {
-				It("should return an AlreadyExists error", func() {
+				It("returns an AlreadyExists error", func() {
 					_, err := client.CloudFormation.CreateStack(&cloudformation.CreateStackInput{
 						StackName:    aws.String(stackName),
 						TemplateBody: aws.String(templateBody),
@@ -83,34 +116,40 @@ var _ = Describe("Integration", func() {
 						TemplateBody: aws.String(templateBody),
 					})
 					Expect(err).To(HaveOccurred())
-					awsErr := err.(awserr.Error)
+					awsErr := err.(awserr.RequestFailure)
 					Expect(awsErr.Code()).To(Equal("AlreadyExistsException"))
+					Expect(awsErr.Message()).To(Equal(fmt.Sprintf("Stack [%s] already exists", stackName)))
+					Expect(awsErr.StatusCode()).To(Equal(400))
 				})
 			})
 		})
+
 		Describe("DescribeStacks", func() {
 			Context("when the stack does not exist", func() {
-				It("should return a ValidationError error", func() {
+				It("returns a ValidationError error", func() {
 					_, err := client.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
 						StackName: aws.String(stackName),
 					})
 					Expect(err).To(HaveOccurred())
-					awsErr := err.(awserr.Error)
+					awsErr := err.(awserr.RequestFailure)
 					Expect(awsErr.Code()).To(Equal("ValidationError"))
 					Expect(awsErr.Message()).To(Equal(fmt.Sprintf("Stack with id %s does not exist", stackName)))
+					Expect(awsErr.StatusCode()).To(Equal(400))
 				})
 			})
 		})
+
 		Describe("DescribeStackResources", func() {
 			Context("when the stack does not exist", func() {
-				It("should return a ValidationError error", func() {
+				It("returns a ValidationError error", func() {
 					_, err := client.CloudFormation.DescribeStackResources(&cloudformation.DescribeStackResourcesInput{
 						StackName: aws.String(stackName),
 					})
 					Expect(err).To(HaveOccurred())
-					awsErr := err.(awserr.Error)
+					awsErr := err.(awserr.RequestFailure)
 					Expect(awsErr.Code()).To(Equal("ValidationError"))
 					Expect(awsErr.Message()).To(Equal(fmt.Sprintf("Stack with id %s does not exist", stackName)))
+					Expect(awsErr.StatusCode()).To(Equal(400))
 				})
 			})
 		})

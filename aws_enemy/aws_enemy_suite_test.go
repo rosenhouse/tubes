@@ -12,7 +12,7 @@ import (
 
 func TestIntegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Integration Suite")
+	RunSpecs(t, "AWS Enemy Suite")
 }
 
 var _ = BeforeSuite(func() {

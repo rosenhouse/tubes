@@ -2,6 +2,7 @@ package awsclient_test
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -19,11 +20,23 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 		cloudFormationClient *mocks.CloudFormationClient
 		ec2Client            *mocks.EC2Client
 	)
+	const (
+		region              = "some-region"
+		accountID    uint64 = 123456789012 // 12 digits
+		stackName           = "some-stack-name"
+		resourceGUID        = "some-resource-guid"
+	)
 
 	var newResource = func(logicalID, physicalID string) *cloudformation.StackResource {
 		return &cloudformation.StackResource{
 			LogicalResourceId:  aws.String(logicalID),
 			PhysicalResourceId: aws.String(physicalID),
+			StackId: aws.String(fmt.Sprintf("arn:aws:cloudformation:%s:%d:stack/%s/%s",
+				region,
+				accountID,
+				stackName,
+				resourceGUID,
+			)),
 		}
 	}
 
@@ -66,6 +79,7 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 			BOSHSubnetID:      "subnet-12345",
 			BOSHElasticIP:     "54.123.456.78",
 			BOSHSecurityGroup: "sg-12345",
+			AccountID:         "123456789012",
 		}))
 	})
 
@@ -103,6 +117,13 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 				cloudFormationClient.DescribeStackResourcesCall.Returns.Output.StackResources[0] = newResource("nope", "very")
 				_, err := client.GetBaseStackResources("some-stack-name")
 				Expect(err).To(MatchError("missing stack resource BOSHSecurityGroup"))
+			})
+		})
+		Context("when a stack resource's StackID is not a valid ARN", func() {
+			It("should return an error", func() {
+				cloudFormationClient.DescribeStackResourcesCall.Returns.Output.StackResources[3].StackId = aws.String("invalid-stackid")
+				_, err := client.GetBaseStackResources("some-stack-name")
+				Expect(err).To(MatchError(`malformed ARN "invalid-stackid"`))
 			})
 		})
 	})

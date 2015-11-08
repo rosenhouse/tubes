@@ -14,6 +14,7 @@ type BaseStackResources struct {
 	BOSHSubnetID      string
 	BOSHElasticIP     string
 	BOSHSecurityGroup string
+	AccountID         string
 }
 
 func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, error) {
@@ -24,12 +25,17 @@ func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, er
 		return BaseStackResources{}, err
 	}
 
+	resources := BaseStackResources{}
 	mapping := map[string]string{}
 	for _, resource := range output.StackResources {
 		mapping[*resource.LogicalResourceId] = *resource.PhysicalResourceId
+		arn, err := c.ParseARN(*resource.StackId)
+		if err != nil {
+			return resources, err
+		}
+		resources.AccountID = arn.AccountID
 	}
 
-	resources := BaseStackResources{}
 	var ok bool
 	resources.BOSHSubnetID, ok = mapping["BOSHSubnet"]
 	if !ok {

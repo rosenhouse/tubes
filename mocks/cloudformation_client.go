@@ -2,6 +2,50 @@ package mocks
 
 import "github.com/aws/aws-sdk-go/service/cloudformation"
 
+type DescribeStacksCall struct {
+	Input  *cloudformation.DescribeStacksInput
+	Output *cloudformation.DescribeStacksOutput
+	Error  error
+}
+
+type CloudFormationClientMultiCall struct {
+	DescribeStacksCallCount int
+	DescribeStacksCalls     []DescribeStacksCall
+}
+
+func NewCloudFormationClientMultiCall(callCount int) *CloudFormationClientMultiCall {
+	return &CloudFormationClientMultiCall{
+		DescribeStacksCalls: make([]DescribeStacksCall, callCount),
+	}
+}
+
+func (c *CloudFormationClientMultiCall) DescribeStacks(input *cloudformation.DescribeStacksInput) (*cloudformation.DescribeStacksOutput, error) {
+	i := c.DescribeStacksCallCount
+
+	c.DescribeStacksCalls[i].Input = input
+	out := c.DescribeStacksCalls[i].Output
+	err := c.DescribeStacksCalls[i].Error
+
+	c.DescribeStacksCallCount++
+	return out, err
+}
+
+func (c *CloudFormationClientMultiCall) DescribeStackResources(input *cloudformation.DescribeStackResourcesInput) (*cloudformation.DescribeStackResourcesOutput, error) {
+	panic("not implemented")
+}
+
+func (c *CloudFormationClientMultiCall) CreateStack(input *cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error) {
+	panic("not implemented")
+}
+
+func (c *CloudFormationClientMultiCall) UpdateStack(input *cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error) {
+	panic("not implemented")
+}
+
+func (c *CloudFormationClientMultiCall) DeleteStack(input *cloudformation.DeleteStackInput) (*cloudformation.DeleteStackOutput, error) {
+	panic("not implemented")
+}
+
 type CloudFormationClient struct {
 	DescribeStackResourcesCall struct {
 		Receives struct {
@@ -63,14 +107,17 @@ func (c *CloudFormationClient) DescribeStacks(input *cloudformation.DescribeStac
 	c.DescribeStacksCall.Receives.Input = input
 	return c.DescribeStacksCall.Returns.Output, c.DescribeStacksCall.Returns.Error
 }
+
 func (c *CloudFormationClient) CreateStack(input *cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error) {
 	c.CreateStackCall.Receives.Input = input
 	return c.CreateStackCall.Returns.Output, c.CreateStackCall.Returns.Error
 }
+
 func (c *CloudFormationClient) UpdateStack(input *cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error) {
 	c.UpdateStackCall.Receives.Input = input
 	return c.UpdateStackCall.Returns.Output, c.UpdateStackCall.Returns.Error
 }
+
 func (c *CloudFormationClient) DeleteStack(input *cloudformation.DeleteStackInput) (*cloudformation.DeleteStackOutput, error) {
 	c.DeleteStackCall.Receives.Input = input
 	return c.DeleteStackCall.Returns.Output, c.DeleteStackCall.Returns.Error

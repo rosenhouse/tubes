@@ -1,6 +1,6 @@
 package awsclient
 
-const Template = `
+const BaseStackTemplate = `
 {
     "TemplateBody": {
         "AWSTemplateFormatVersion": "2010-09-09",

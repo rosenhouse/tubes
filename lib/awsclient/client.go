@@ -3,6 +3,7 @@ package awsclient
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -12,10 +13,11 @@ import (
 )
 
 type Config struct {
-	Region           string
-	AccessKey        string
-	SecretKey        string
-	EndpointOverride string
+	Region                    string
+	AccessKey                 string
+	SecretKey                 string
+	EndpointOverride          string
+	CloudFormationWaitTimeout time.Duration
 }
 
 type ec2Client interface {
@@ -31,9 +33,21 @@ type cloudformationClient interface {
 	DeleteStack(*cloudformation.DeleteStackInput) (*cloudformation.DeleteStackOutput, error)
 }
 
+type cloudFormationStatusPundit interface {
+	IsHealthy(statusString string) bool
+	IsComplete(statusString string) bool
+}
+
+type clock interface {
+	Sleep(time.Duration)
+}
+
 type Client struct {
-	EC2            ec2Client
-	CloudFormation cloudformationClient
+	EC2                        ec2Client
+	CloudFormation             cloudformationClient
+	CloudFormationStatusPundit cloudFormationStatusPundit
+	Clock                      clock
+	CloudFormationWaitTimeout  time.Duration
 }
 
 func New(c Config) *Client {
@@ -45,14 +59,22 @@ func New(c Config) *Client {
 	}
 
 	session := session.New(sdkConfig)
-	ec2Client := ec2.New(session)
-	cloudFormationClient := cloudformation.New(session)
 
+	if c.CloudFormationWaitTimeout == 0 {
+		c.CloudFormationWaitTimeout = 2 * time.Minute
+	}
 	return &Client{
-		EC2:            ec2Client,
-		CloudFormation: cloudFormationClient,
+		EC2:                        ec2.New(session),
+		CloudFormation:             cloudformation.New(session),
+		CloudFormationStatusPundit: CloudFormationStatusPundit{},
+		Clock: clockImpl{},
+		CloudFormationWaitTimeout: c.CloudFormationWaitTimeout,
 	}
 }
+
+type clockImpl struct{}
+
+func (c clockImpl) Sleep(d time.Duration) { time.Sleep(d) }
 
 // ARN represents an Amazon Resource Name
 // http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html

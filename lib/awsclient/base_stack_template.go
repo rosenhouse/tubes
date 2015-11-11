@@ -2,7 +2,6 @@ package awsclient
 
 const BaseStackTemplate = `
 {
-    "TemplateBody": {
         "AWSTemplateFormatVersion": "2010-09-09",
         "Resources": {
             "NATSecurityGroup": {
@@ -279,6 +278,5 @@ const BaseStackTemplate = `
                 "Description": "CIDR block for the private subnet."
             }
         }
-    }
 }
 `

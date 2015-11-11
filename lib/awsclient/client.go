@@ -61,7 +61,7 @@ func New(c Config) *Client {
 	session := session.New(sdkConfig)
 
 	if c.CloudFormationWaitTimeout == 0 {
-		c.CloudFormationWaitTimeout = 2 * time.Minute
+		c.CloudFormationWaitTimeout = 5 * time.Minute
 	}
 	return &Client{
 		EC2:                        ec2.New(session),

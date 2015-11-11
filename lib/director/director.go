@@ -48,7 +48,7 @@ type AWSSubnet struct {
 	SubnetID string
 }
 
-type Director struct {
+type DirectorConfig struct {
 	Software    Software
 	AWSConfig   AWSConfig
 	Credentials Credentials
@@ -87,7 +87,9 @@ func convertSubnet(awsSubnet AWSSubnet) (Subnet, error) {
 	}, nil
 }
 
-func (d Director) Generate() (Manifest, error) {
+type DirectorManifestGenerator struct{}
+
+func (g DirectorManifestGenerator) Generate(d DirectorConfig) (Manifest, error) {
 
 	awsProperties := map[interface{}]interface{}{
 		"access_key_id":           d.AWSConfig.AccessKeyID,

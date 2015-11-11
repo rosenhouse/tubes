@@ -21,7 +21,8 @@ var _ = Describe("Generating a deployment manifest for a BOSH Director", func() 
 		expectedManifest       manifests.Manifest
 		softwareConfig         Software
 		awsConfig              AWSConfig
-		director               Director
+		generator              DirectorManifestGenerator
+		directorConfig         DirectorConfig
 	)
 
 	BeforeEach(func() {
@@ -54,7 +55,7 @@ var _ = Describe("Generating a deployment manifest for a BOSH Director", func() 
 			SecurityGroup:   "bosh",
 			Region:          "us-east-1",
 		}
-		director = Director{
+		directorConfig = DirectorConfig{
 			Software:  softwareConfig,
 			AWSConfig: awsConfig,
 			Credentials: Credentials{
@@ -80,7 +81,7 @@ var _ = Describe("Generating a deployment manifest for a BOSH Director", func() 
 
 	Describe("equality of structural data", func() {
 		It("should set the fields correctly", func() {
-			actualManifest, err := director.Generate()
+			actualManifest, err := generator.Generate(directorConfig)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(actualManifest.Name).To(Equal(expectedManifest.Name))
@@ -93,7 +94,7 @@ var _ = Describe("Generating a deployment manifest for a BOSH Director", func() 
 		})
 
 		It("should match the entire structure", func() {
-			actualManifest, err := director.Generate()
+			actualManifest, err := generator.Generate(directorConfig)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(actualManifest).To(Equal(expectedManifest))
@@ -102,7 +103,7 @@ var _ = Describe("Generating a deployment manifest for a BOSH Director", func() 
 
 	Describe("equality of serialized data", func() {
 		It("should have all the same data as the fixture", func() {
-			actualManifest, err := director.Generate()
+			actualManifest, err := generator.Generate(directorConfig)
 			Expect(err).NotTo(HaveOccurred())
 			actualString := actualManifest.String()
 

@@ -3,6 +3,7 @@ package awsclient_test
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -13,6 +14,17 @@ import (
 	"github.com/rosenhouse/tubes/lib/awsclient"
 	"github.com/rosenhouse/tubes/mocks"
 )
+
+var _ = Describe("Generating the base template", func() {
+	It("should match the fixture", func() {
+		asJSON := awsclient.BaseStackTemplate.String()
+
+		expected, err := ioutil.ReadFile("fixtures/base_stack_template.json")
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(asJSON).To(MatchJSON(expected))
+	})
+})
 
 var _ = Describe("Retrieving resource info for the base stack", func() {
 	var (

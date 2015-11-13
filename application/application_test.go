@@ -11,6 +11,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 
 	"github.com/rosenhouse/tubes/application"
+	"github.com/rosenhouse/tubes/lib/awsclient"
 	"github.com/rosenhouse/tubes/mocks"
 )
 
@@ -31,10 +32,8 @@ var _ = Describe("Application", func() {
 		logBuffer = gbytes.NewBuffer()
 
 		app = &application.Application{
-			AWSClient:         awsClient,
-			BaseStackTemplate: "some-template",
-			SSHKeyName:        "some-ssh-key-name",
-			Logger:            log.New(logBuffer, "", 0),
+			AWSClient: awsClient,
+			Logger:    log.New(logBuffer, "", 0),
 		}
 
 		awsClient.GetLatestNATBoxAMIIDCall.Returns.AMIID = "some-nat-box-ami-id"
@@ -51,10 +50,10 @@ var _ = Describe("Application", func() {
 			Expect(logBuffer).To(gbytes.Say("Upserting stack..."))
 
 			Expect(awsClient.UpsertStackCall.Receives.StackName).To(Equal(stackName))
-			Expect(awsClient.UpsertStackCall.Receives.Template).To(Equal("some-template"))
+			Expect(awsClient.UpsertStackCall.Receives.Template).To(Equal(awsclient.BaseStackTemplate.String()))
 			Expect(awsClient.UpsertStackCall.Receives.Parameters).To(Equal(map[string]string{
 				"NATInstanceAMI": "some-nat-box-ami-id",
-				"KeyName":        "some-ssh-key-name",
+				"KeyName":        stackName,
 			}))
 		})
 
@@ -62,6 +61,13 @@ var _ = Describe("Application", func() {
 			Expect(app.Boot(stackName)).To(Succeed())
 
 			Expect(awsClient.WaitForStackCall.Receives.StackName).To(Equal(stackName))
+		})
+
+		Context("when the stackName contains invalid characters", func() {
+			It("should immediately error", func() {
+				Expect(app.Boot("invalid_name")).To(MatchError(fmt.Sprintf("invalid name: must match pattern %s", application.StackNamePattern)))
+				Expect(logBuffer.Contents()).To(BeEmpty())
+			})
 		})
 
 		Context("when getting the latest NAT AMI errors", func() {

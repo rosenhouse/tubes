@@ -32,14 +32,12 @@ func main() {
 	})
 
 	app := application.Application{
-		AWSClient:         awsClient,
-		BaseStackTemplate: awsclient.BaseStackTemplate,
-		SSHKeyName:        "bosh",
-		Logger:            logger,
+		AWSClient: awsClient,
+		Logger:    logger,
 	}
 
 	err := app.Boot(stackName)
 	if err != nil {
-		log.Fatalf("%s", err)
+		logger.Fatalf("%s", err)
 	}
 }

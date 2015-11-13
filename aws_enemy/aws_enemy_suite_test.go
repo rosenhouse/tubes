@@ -1,11 +1,12 @@
-package integration_test
+package aws_enemy_test
 
 import (
 	"math/rand"
 
 	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
+
+	"github.com/onsi/ginkgo/config"
 
 	"testing"
 )

@@ -1,4 +1,4 @@
-package integration_test
+package aws_enemy_test
 
 import (
 	"fmt"

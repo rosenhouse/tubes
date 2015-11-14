@@ -3,13 +3,10 @@ package aws_enemy_test
 import (
 	"fmt"
 	"math/rand"
-	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
-
-	"github.com/rosenhouse/tubes/lib/awsclient"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -38,20 +35,15 @@ const templateBody = `{
 
 var _ = Describe("CloudFormation error cases", func() {
 	var (
-		client    *awsclient.Client
 		stackName string
 	)
 
 	BeforeEach(func() {
-		client = awsclient.New(awsclient.Config{
-			Region:    os.Getenv("AWS_DEFAULT_REGION"),
-			AccessKey: os.Getenv("AWS_ACCESS_KEY_ID"),
-			SecretKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
-		})
 		stackName = fmt.Sprintf("test-stack-%x", rand.Int63())
 	})
+
 	AfterEach(func() {
-		client.CloudFormation.DeleteStack(&cloudformation.DeleteStackInput{
+		cloudformationClient.DeleteStack(&cloudformation.DeleteStackInput{
 			StackName: aws.String(stackName),
 		})
 	})
@@ -59,7 +51,7 @@ var _ = Describe("CloudFormation error cases", func() {
 	Describe("UpdateStack", func() {
 		Context("when the stack does not exist", func() {
 			It("returns a ValidationError", func() {
-				_, err := client.CloudFormation.UpdateStack(&cloudformation.UpdateStackInput{
+				_, err := cloudformationClient.UpdateStack(&cloudformation.UpdateStackInput{
 					StackName:    aws.String(stackName),
 					TemplateBody: aws.String(templateBody),
 				})
@@ -72,14 +64,14 @@ var _ = Describe("CloudFormation error cases", func() {
 		})
 		Context("when the stack exists but there are no changes", func() {
 			BeforeEach(func() {
-				_, err := client.CloudFormation.CreateStack(&cloudformation.CreateStackInput{
+				_, err := cloudformationClient.CreateStack(&cloudformation.CreateStackInput{
 					StackName:    aws.String(stackName),
 					TemplateBody: aws.String(templateBody),
 				})
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() (string, error) {
-					output, err := client.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
+					output, err := cloudformationClient.DescribeStacks(&cloudformation.DescribeStacksInput{
 						StackName: aws.String(stackName),
 					})
 					if err != nil {
@@ -89,7 +81,7 @@ var _ = Describe("CloudFormation error cases", func() {
 				}, "60s", "5s").Should(Equal("CREATE_COMPLETE"))
 			})
 			It("returns a ValidationError", func() {
-				_, err := client.CloudFormation.UpdateStack(&cloudformation.UpdateStackInput{
+				_, err := cloudformationClient.UpdateStack(&cloudformation.UpdateStackInput{
 					StackName:    aws.String(stackName),
 					TemplateBody: aws.String(templateBody),
 				})
@@ -105,13 +97,13 @@ var _ = Describe("CloudFormation error cases", func() {
 	Describe("CreateStack", func() {
 		Context("when the stack already exists", func() {
 			It("returns an AlreadyExists error", func() {
-				_, err := client.CloudFormation.CreateStack(&cloudformation.CreateStackInput{
+				_, err := cloudformationClient.CreateStack(&cloudformation.CreateStackInput{
 					StackName:    aws.String(stackName),
 					TemplateBody: aws.String(templateBody),
 				})
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = client.CloudFormation.CreateStack(&cloudformation.CreateStackInput{
+				_, err = cloudformationClient.CreateStack(&cloudformation.CreateStackInput{
 					StackName:    aws.String(stackName),
 					TemplateBody: aws.String(templateBody),
 				})
@@ -127,7 +119,7 @@ var _ = Describe("CloudFormation error cases", func() {
 	Describe("DescribeStacks", func() {
 		Context("when the stack does not exist", func() {
 			It("returns a ValidationError error", func() {
-				_, err := client.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
+				_, err := cloudformationClient.DescribeStacks(&cloudformation.DescribeStacksInput{
 					StackName: aws.String(stackName),
 				})
 				Expect(err).To(HaveOccurred())
@@ -142,7 +134,7 @@ var _ = Describe("CloudFormation error cases", func() {
 	Describe("DescribeStackResources", func() {
 		Context("when the stack does not exist", func() {
 			It("returns a ValidationError error", func() {
-				_, err := client.CloudFormation.DescribeStackResources(&cloudformation.DescribeStackResourcesInput{
+				_, err := cloudformationClient.DescribeStackResources(&cloudformation.DescribeStackResourcesInput{
 					StackName: aws.String(stackName),
 				})
 				Expect(err).To(HaveOccurred())
@@ -157,7 +149,7 @@ var _ = Describe("CloudFormation error cases", func() {
 	Describe("DeleteStack", func() {
 		Context("when the stack does not exist", func() {
 			It("succeeds", func() {
-				_, err := client.CloudFormation.DeleteStack(&cloudformation.DeleteStackInput{
+				_, err := cloudformationClient.DeleteStack(&cloudformation.DeleteStackInput{
 					StackName: aws.String(stackName),
 				})
 				Expect(err).NotTo(HaveOccurred())

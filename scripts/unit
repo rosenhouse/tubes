@@ -1,0 +1,5 @@
+ginkgo \
+  -p -r \
+  --randomizeAllSpecs \
+  --randomizeSuites \
+  -skipPackage acceptance,aws_enemy

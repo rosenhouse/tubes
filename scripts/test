@@ -1,0 +1,11 @@
+#!/bin/bash -eu
+
+
+$(dirname $0)/unit
+
+root=$(cd $(dirname "$0")/.. && pwd)
+cd $root
+ginkgo ./aws_enemy
+
+echo "Starting acceptance tests.  These take several minutes..."
+ginkgo -v ./acceptance

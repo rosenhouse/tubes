@@ -47,6 +47,7 @@ var _ = Describe("Application", func() {
 
 			Expect(logBuffer).To(gbytes.Say("Looking for latest AWS NAT box AMI..."))
 			Expect(logBuffer).To(gbytes.Say("Latest NAT box AMI is \"some-nat-box-ami-id\""))
+			Expect(logBuffer).To(gbytes.Say("Creating keypair"))
 			Expect(logBuffer).To(gbytes.Say("Upserting stack..."))
 			Expect(logBuffer).To(gbytes.Say("Finished"))
 
@@ -65,6 +66,12 @@ var _ = Describe("Application", func() {
 			Expect(awsClient.WaitForStackCall.Receives.Pundit).To(Equal(awsclient.CloudFormationUpsertPundit{}))
 		})
 
+		It("should create a new ssh keypair", func() {
+			Expect(app.Boot(stackName)).To(Succeed())
+
+			Expect(awsClient.CreateKeyPairCall.Receives.StackName).To(Equal(stackName))
+		})
+
 		Context("when the stackName contains invalid characters", func() {
 			It("should immediately error", func() {
 				Expect(app.Boot("invalid_name")).To(MatchError(fmt.Sprintf("invalid name: must match pattern %s", application.StackNamePattern)))
@@ -77,8 +84,18 @@ var _ = Describe("Application", func() {
 				awsClient.GetLatestNATBoxAMIIDCall.Returns.Error = errors.New("some error")
 
 				Expect(app.Boot(stackName)).To(MatchError("some error"))
+				Expect(awsClient.CreateKeyPairCall.Receives.StackName).To(BeEmpty())
 				Expect(awsClient.UpsertStackCall.Receives.StackName).To(BeEmpty())
 				Expect(awsClient.WaitForStackCall.Receives.StackName).To(BeEmpty())
+			})
+		})
+
+		Context("when creating a keypair fails", func() {
+			It("should immediately return the error", func() {
+				awsClient.CreateKeyPairCall.Returns.Error = errors.New("some error")
+
+				Expect(app.Boot(stackName)).To(MatchError("some error"))
+				Expect(awsClient.UpsertStackCall.Receives.StackName).To(BeEmpty())
 			})
 		})
 
@@ -107,6 +124,8 @@ var _ = Describe("Application", func() {
 			Expect(awsClient.DeleteStackCall.Receives.StackName).To(Equal(stackName))
 
 			Expect(logBuffer).To(gbytes.Say("Deleting stack"))
+			Expect(logBuffer).To(gbytes.Say("Delete complete"))
+			Expect(logBuffer).To(gbytes.Say("Deleting keypair"))
 			Expect(logBuffer).To(gbytes.Say("Finished"))
 		})
 
@@ -115,6 +134,20 @@ var _ = Describe("Application", func() {
 
 			Expect(awsClient.WaitForStackCall.Receives.StackName).To(Equal(stackName))
 			Expect(awsClient.WaitForStackCall.Receives.Pundit).To(Equal(awsclient.CloudFormationDeletePundit{}))
+		})
+
+		It("should delete the ssk keypair", func() {
+			Expect(app.Destroy(stackName)).To(Succeed())
+
+			Expect(awsClient.DeleteKeyPairCall.Receives.StackName).To(Equal(stackName))
+		})
+
+		Context("when deleting a keypair fails", func() {
+			It("should immediately return the error", func() {
+				awsClient.DeleteKeyPairCall.Returns.Error = errors.New("some error")
+
+				Expect(app.Destroy(stackName)).To(MatchError("some error"))
+			})
 		})
 
 		Context("when deleting the stack errors", func() {

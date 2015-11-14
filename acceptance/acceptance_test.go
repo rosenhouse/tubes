@@ -48,6 +48,7 @@ var _ = Describe("The CLI", func() {
 				SecretKey: envVars["AWS_SECRET_ACCESS_KEY"],
 			})
 			Expect(client.DeleteStack(stackName)).To(Succeed())
+			Expect(client.DeleteKeyPair(stackName)).To(Succeed())
 		})
 
 		It("should support basic environment manipulation", func() { // slow happy path
@@ -55,20 +56,23 @@ var _ = Describe("The CLI", func() {
 			const StackChangeTimeout = "4m"
 
 			By("booting a fresh environment", func() {
-				session := start(envVars, "up", "bosh")
+				session := start(envVars, "up", stackName)
 
 				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Looking for latest AWS NAT box AMI"))
-				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("ami-[a-f0-9]"))
+				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("ami-[a-f0-9]*"))
+				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Creating keypair"))
 				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Upserting stack"))
 				Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Finished"))
 				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 			})
 
 			By("tearing down the environment", func() {
-				session := start(envVars, "down", "bosh")
+				session := start(envVars, "down", stackName)
 
 				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Deleting stack"))
-				Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Finished"))
+				Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Delete complete"))
+				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Deleting keypair"))
+				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Finished"))
 				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 			})
 		})

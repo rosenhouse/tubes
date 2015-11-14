@@ -12,6 +12,8 @@ type awsClient interface {
 	UpsertStack(stackName string, template string, parameters map[string]string) error
 	WaitForStack(stackName string, pundit awsclient.CloudFormationStatusPundit) error
 	DeleteStack(stackName string) error
+	CreateKeyPair(stackName string) (string, error)
+	DeleteKeyPair(stackName string) error
 }
 
 type logger interface {
@@ -41,6 +43,12 @@ func (a *Application) Boot(stackName string) error {
 	}
 	a.Logger.Printf("Latest NAT box AMI is %q\n", natInstanceAMI)
 
+	a.Logger.Printf("Creating keypair...")
+	_, err = a.AWSClient.CreateKeyPair(stackName)
+	if err != nil {
+		return err
+	}
+
 	parameters := map[string]string{
 		"NATInstanceAMI": natInstanceAMI,
 		"KeyName":        stackName,
@@ -69,6 +77,12 @@ func (a *Application) Destroy(stackName string) error {
 	}
 
 	err = a.AWSClient.WaitForStack(stackName, awsclient.CloudFormationDeletePundit{})
+	if err != nil {
+		return err
+	}
+	a.Logger.Printf("Delete complete")
+	a.Logger.Printf("Deleting keypair...")
+	err = a.AWSClient.DeleteKeyPair(stackName)
 	if err != nil {
 		return err
 	}

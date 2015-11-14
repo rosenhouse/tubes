@@ -33,21 +33,15 @@ type cloudformationClient interface {
 	DeleteStack(*cloudformation.DeleteStackInput) (*cloudformation.DeleteStackOutput, error)
 }
 
-type cloudFormationStatusPundit interface {
-	IsHealthy(statusString string) bool
-	IsComplete(statusString string) bool
-}
-
 type clock interface {
 	Sleep(time.Duration)
 }
 
 type Client struct {
-	EC2                        ec2Client
-	CloudFormation             cloudformationClient
-	CloudFormationStatusPundit cloudFormationStatusPundit
-	Clock                      clock
-	CloudFormationWaitTimeout  time.Duration
+	EC2                       ec2Client
+	CloudFormation            cloudformationClient
+	Clock                     clock
+	CloudFormationWaitTimeout time.Duration
 }
 
 func New(c Config) *Client {
@@ -64,10 +58,9 @@ func New(c Config) *Client {
 		c.CloudFormationWaitTimeout = 5 * time.Minute
 	}
 	return &Client{
-		EC2:                        ec2.New(session),
-		CloudFormation:             cloudformation.New(session),
-		CloudFormationStatusPundit: CloudFormationStatusPundit{},
-		Clock: clockImpl{},
+		EC2:            ec2.New(session),
+		CloudFormation: cloudformation.New(session),
+		Clock:          clockImpl{},
 		CloudFormationWaitTimeout: c.CloudFormationWaitTimeout,
 	}
 }

@@ -21,7 +21,7 @@ func main() {
 	action := os.Args[1]
 	stackName := os.Args[2]
 
-	if action != "up" {
+	if action != "up" && action != "down" {
 		logger.Fatalf("invalid action %q", action)
 	}
 
@@ -37,9 +37,18 @@ func main() {
 		Logger:    logger,
 	}
 
-	err = app.Boot(stackName)
-	if err != nil {
-		logger.Fatalf("%s", err)
+	if action == "up" {
+		err = app.Boot(stackName)
+		if err != nil {
+			logger.Fatalf("%s", err)
+		}
+	} else if action == "down" {
+		err = app.Destroy(stackName)
+		if err != nil {
+			logger.Fatalf("%s", err)
+		}
+	} else {
+		logger.Fatalf("unknown action")
 	}
 }
 

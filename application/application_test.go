@@ -48,6 +48,7 @@ var _ = Describe("Application", func() {
 			Expect(logBuffer).To(gbytes.Say("Looking for latest AWS NAT box AMI..."))
 			Expect(logBuffer).To(gbytes.Say("Latest NAT box AMI is \"some-nat-box-ami-id\""))
 			Expect(logBuffer).To(gbytes.Say("Upserting stack..."))
+			Expect(logBuffer).To(gbytes.Say("Finished"))
 
 			Expect(awsClient.UpsertStackCall.Receives.StackName).To(Equal(stackName))
 			Expect(awsClient.UpsertStackCall.Receives.Template).To(Equal(awsclient.BaseStackTemplate.String()))
@@ -61,6 +62,7 @@ var _ = Describe("Application", func() {
 			Expect(app.Boot(stackName)).To(Succeed())
 
 			Expect(awsClient.WaitForStackCall.Receives.StackName).To(Equal(stackName))
+			Expect(awsClient.WaitForStackCall.Receives.Pundit).To(Equal(awsclient.CloudFormationUpsertPundit{}))
 		})
 
 		Context("when the stackName contains invalid characters", func() {
@@ -94,6 +96,41 @@ var _ = Describe("Application", func() {
 				awsClient.WaitForStackCall.Returns.Error = errors.New("some error")
 
 				Expect(app.Boot(stackName)).To(MatchError("some error"))
+			})
+		})
+	})
+
+	Describe("Destroy", func() {
+		It("should delete the stack", func() {
+			Expect(app.Destroy(stackName)).To(Succeed())
+
+			Expect(awsClient.DeleteStackCall.Receives.StackName).To(Equal(stackName))
+
+			Expect(logBuffer).To(gbytes.Say("Deleting stack"))
+			Expect(logBuffer).To(gbytes.Say("Finished"))
+		})
+
+		It("should wait for the stack be fully deleted", func() {
+			Expect(app.Destroy(stackName)).To(Succeed())
+
+			Expect(awsClient.WaitForStackCall.Receives.StackName).To(Equal(stackName))
+			Expect(awsClient.WaitForStackCall.Receives.Pundit).To(Equal(awsclient.CloudFormationDeletePundit{}))
+		})
+
+		Context("when deleting the stack errors", func() {
+			It("should immediately return the error", func() {
+				awsClient.DeleteStackCall.Returns.Error = errors.New("some error")
+
+				Expect(app.Destroy(stackName)).To(MatchError("some error"))
+				Expect(awsClient.WaitForStackCall.Receives.StackName).To(BeEmpty())
+			})
+		})
+
+		Context("when waiting for the stack errors", func() {
+			It("should return the error", func() {
+				awsClient.WaitForStackCall.Returns.Error = errors.New("some error")
+
+				Expect(app.Destroy(stackName)).To(MatchError("some error"))
 			})
 		})
 	})

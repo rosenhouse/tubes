@@ -1,5 +1,7 @@
 package mocks
 
+import "github.com/rosenhouse/tubes/lib/awsclient"
+
 type AWSClient struct {
 	GetLatestNATBoxAMIIDCall struct {
 		Returns struct {
@@ -17,9 +19,18 @@ type AWSClient struct {
 			Error error
 		}
 	}
+	DeleteStackCall struct {
+		Receives struct {
+			StackName string
+		}
+		Returns struct {
+			Error error
+		}
+	}
 	WaitForStackCall struct {
 		Receives struct {
 			StackName string
+			Pundit    awsclient.CloudFormationStatusPundit
 		}
 		Returns struct {
 			Error error
@@ -38,7 +49,13 @@ func (c *AWSClient) UpsertStack(stackName string, template string, parameters ma
 	return c.UpsertStackCall.Returns.Error
 }
 
-func (c *AWSClient) WaitForStack(stackName string) error {
+func (c *AWSClient) WaitForStack(stackName string, pundit awsclient.CloudFormationStatusPundit) error {
 	c.WaitForStackCall.Receives.StackName = stackName
+	c.WaitForStackCall.Receives.Pundit = pundit
 	return c.WaitForStackCall.Returns.Error
+}
+
+func (c *AWSClient) DeleteStack(stackName string) error {
+	c.DeleteStackCall.Receives.StackName = stackName
+	return c.DeleteStackCall.Returns.Error
 }

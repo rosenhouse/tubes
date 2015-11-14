@@ -10,7 +10,8 @@ import (
 type awsClient interface {
 	GetLatestNATBoxAMIID() (string, error)
 	UpsertStack(stackName string, template string, parameters map[string]string) error
-	WaitForStack(stackName string) error
+	WaitForStack(stackName string, pundit awsclient.CloudFormationStatusPundit) error
+	DeleteStack(stackName string) error
 }
 
 type logger interface {
@@ -18,9 +19,6 @@ type logger interface {
 	Println(a ...interface{})
 	Fatalf(format string, v ...interface{})
 	Fatalln(a ...interface{})
-}
-
-type state interface {
 }
 
 type Application struct {
@@ -54,7 +52,23 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 
-	err = a.AWSClient.WaitForStack(stackName)
+	err = a.AWSClient.WaitForStack(stackName, awsclient.CloudFormationUpsertPundit{})
+	if err != nil {
+		return err
+	}
+
+	a.Logger.Println("Finished")
+	return nil
+}
+
+func (a *Application) Destroy(stackName string) error {
+	a.Logger.Println("Deleting stack")
+	err := a.AWSClient.DeleteStack(stackName)
+	if err != nil {
+		return err
+	}
+
+	err = a.AWSClient.WaitForStack(stackName, awsclient.CloudFormationDeletePundit{})
 	if err != nil {
 		return err
 	}

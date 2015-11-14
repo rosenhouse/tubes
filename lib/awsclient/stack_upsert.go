@@ -78,7 +78,8 @@ func (c *Client) UpsertStack(stackName string, template string, parameters map[s
 	}
 
 	status := *output.Stacks[0].StackStatus
-	if status == "CREATE_COMPLETE" || status == "UPDATE_COMPLETE" {
+	pundit := CloudFormationUpsertPundit{}
+	if pundit.IsHealthy(status) && pundit.IsComplete(status) {
 		return c.updateStack(stackName, template, parameters)
 	}
 

@@ -48,6 +48,14 @@ var _ = Describe("The CLI", func() {
 			Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Finished"))
 			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 		})
+
+		By("tearing down the environment", func() {
+			session := start(envVars, "down", "bosh")
+
+			Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Deleting stack"))
+			Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Finished"))
+			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+		})
 	})
 
 	Context("invalid user input", func() { // fast failing cases

@@ -8,24 +8,34 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 )
 
-func (c *Client) WaitForStack(stackName string) error {
+type CloudFormationStatusPundit interface {
+	IsHealthy(statusString string) bool
+	IsComplete(statusString string) bool
+}
+
+func (c *Client) WaitForStack(stackName string, pundit CloudFormationStatusPundit) error {
 	const sleepDuration = 5 * time.Second
 	elapsed := 0 * time.Second
 
 	var status string
+	var stackId string = stackName
 
 	for {
 		output, err := c.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
-			StackName: aws.String(stackName),
+			StackName: aws.String(stackId),
 		})
 		if err != nil {
 			return err
 		}
+		if stackId == stackName {
+			stackId = *output.Stacks[0].StackId
+		}
+
 		status = *output.Stacks[0].StackStatus
-		if !c.CloudFormationStatusPundit.IsHealthy(status) {
+		if !pundit.IsHealthy(status) {
 			return fmt.Errorf("stack %q has unhealthy status %q", stackName, status)
 		}
-		if c.CloudFormationStatusPundit.IsComplete(status) {
+		if pundit.IsComplete(status) {
 			return nil
 		}
 

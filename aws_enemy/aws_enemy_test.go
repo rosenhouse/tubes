@@ -153,4 +153,15 @@ var _ = Describe("CloudFormation error cases", func() {
 			})
 		})
 	})
+
+	Describe("DeleteStack", func() {
+		Context("when the stack does not exist", func() {
+			It("succeeds", func() {
+				_, err := client.CloudFormation.DeleteStack(&cloudformation.DeleteStackInput{
+					StackName: aws.String(stackName),
+				})
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+	})
 })

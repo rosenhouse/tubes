@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"github.com/rosenhouse/tubes/lib/awsclient"
 )
 
 var _ = Describe("The CLI", func() {
@@ -32,33 +33,56 @@ var _ = Describe("The CLI", func() {
 
 	BeforeEach(func() {
 		stackName = fmt.Sprintf("tubes-acceptance-test-%x", rand.Int())
-		envVars = getEnvironment()
 	})
 
-	It("should support basic environment manipulation", func() { // slow happy path
-		const NormalTimeout = "10s"
-		const StackChangeTimeout = "4m"
-
-		By("booting a fresh environment", func() {
-			session := start(envVars, "up", "bosh")
-
-			Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Looking for latest AWS NAT box AMI"))
-			Eventually(session.Out, NormalTimeout).Should(gbytes.Say("ami-[a-f0-9]"))
-			Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Upserting stack"))
-			Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Finished"))
-			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+	Describe("happy path", func() {
+		BeforeEach(func() {
+			stackName = fmt.Sprintf("tubes-acceptance-test-%x", rand.Int())
+			envVars = getEnvironment()
+		})
+		AfterEach(func() {
+			fmt.Fprintf(GinkgoWriter, "\n\n  -->  Cleaning up.  You may not want this if you're debugging a test failure.\n\n")
+			client := awsclient.New(awsclient.Config{
+				Region:    envVars["AWS_DEFAULT_REGION"],
+				AccessKey: envVars["AWS_ACCESS_KEY_ID"],
+				SecretKey: envVars["AWS_SECRET_ACCESS_KEY"],
+			})
+			Expect(client.DeleteStack(stackName)).To(Succeed())
 		})
 
-		By("tearing down the environment", func() {
-			session := start(envVars, "down", "bosh")
+		It("should support basic environment manipulation", func() { // slow happy path
+			const NormalTimeout = "10s"
+			const StackChangeTimeout = "4m"
 
-			Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Deleting stack"))
-			Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Finished"))
-			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+			By("booting a fresh environment", func() {
+				session := start(envVars, "up", "bosh")
+
+				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Looking for latest AWS NAT box AMI"))
+				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("ami-[a-f0-9]"))
+				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Upserting stack"))
+				Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Finished"))
+				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+			})
+
+			By("tearing down the environment", func() {
+				session := start(envVars, "down", "bosh")
+
+				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Deleting stack"))
+				Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Finished"))
+				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+			})
 		})
 	})
 
 	Context("invalid user input", func() { // fast failing cases
+		BeforeEach(func() {
+			envVars = map[string]string{
+				"AWS_DEFAULT_REGION":    "us-west-2",
+				"AWS_ACCESS_KEY_ID":     "some-access-key-id",
+				"AWS_SECRET_ACCESS_KEY": "some-secret-access-key",
+			}
+		})
+
 		const ErrTimeout = "10s"
 		Context("no command line argument are provided", func() {
 			It("should print a useful error", func() {

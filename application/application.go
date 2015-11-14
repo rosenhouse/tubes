@@ -54,5 +54,11 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 
-	return a.AWSClient.WaitForStack(stackName)
+	err = a.AWSClient.WaitForStack(stackName)
+	if err != nil {
+		return err
+	}
+
+	a.Logger.Println("Finished")
+	return nil
 }

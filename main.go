@@ -2,73 +2,22 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"path/filepath"
 
-	"github.com/rosenhouse/tubes/application"
-	"github.com/rosenhouse/tubes/lib/awsclient"
+	"github.com/jessevdk/go-flags"
+	"github.com/rosenhouse/tubes/application/commands"
 )
 
 func main() {
-	logger := log.New(os.Stdout, "", 0)
+	commands := commands.New()
+	parser := flags.NewParser(commands, flags.HelpFlag|flags.PassDoubleDash)
 
-	if len(os.Args) != 3 {
-		_, programName := filepath.Split(os.Args[0])
-		logger.Fatalf("usage: %s action stack-name", programName)
-	}
-
-	action := os.Args[1]
-	stackName := os.Args[2]
-
-	if action != "up" && action != "down" {
-		logger.Fatalf("invalid action %q", action)
-	}
-
-	awsConfig, err := loadAWSConfigFromEnv()
+	_, err := parser.Parse()
 	if err != nil {
-		logger.Fatalf("%s", err)
-	}
-
-	awsClient := awsclient.New(awsConfig)
-
-	app := application.Application{
-		AWSClient: awsClient,
-		Logger:    logger,
-	}
-
-	if action == "up" {
-		err = app.Boot(stackName)
-		if err != nil {
-			logger.Fatalf("%s", err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		if ferr, ok := err.(*flags.Error); ok && ferr.Type != flags.ErrHelp {
+			parser.WriteHelp(os.Stderr)
 		}
-	} else if action == "down" {
-		err = app.Destroy(stackName)
-		if err != nil {
-			logger.Fatalf("%s", err)
-		}
-	} else {
-		logger.Fatalf("unknown action")
+		os.Exit(1)
 	}
-}
-
-func loadAWSConfigFromEnv() (awsclient.Config, error) {
-	missing := []string{}
-	load := func(name string) string {
-		val := os.Getenv(name)
-		if val == "" {
-			missing = append(missing, name)
-		}
-		return val
-	}
-	config := awsclient.Config{
-		Region:    load("AWS_DEFAULT_REGION"),
-		AccessKey: load("AWS_ACCESS_KEY_ID"),
-		SecretKey: load("AWS_SECRET_ACCESS_KEY"),
-	}
-
-	if len(missing) > 0 {
-		return config, fmt.Errorf("missing required environment variable(s): %s", missing)
-	}
-	return config, nil
 }

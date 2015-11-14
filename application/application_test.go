@@ -45,9 +45,9 @@ var _ = Describe("Application", func() {
 		It("should boot the base stack using the latest NAT ID", func() {
 			Expect(app.Boot(stackName)).To(Succeed())
 
+			Expect(logBuffer).To(gbytes.Say("Creating keypair"))
 			Expect(logBuffer).To(gbytes.Say("Looking for latest AWS NAT box AMI..."))
 			Expect(logBuffer).To(gbytes.Say("Latest NAT box AMI is \"some-nat-box-ami-id\""))
-			Expect(logBuffer).To(gbytes.Say("Creating keypair"))
 			Expect(logBuffer).To(gbytes.Say("Upserting stack..."))
 			Expect(logBuffer).To(gbytes.Say("Finished"))
 
@@ -84,7 +84,6 @@ var _ = Describe("Application", func() {
 				awsClient.GetLatestNATBoxAMIIDCall.Returns.Error = errors.New("some error")
 
 				Expect(app.Boot(stackName)).To(MatchError("some error"))
-				Expect(awsClient.CreateKeyPairCall.Receives.StackName).To(BeEmpty())
 				Expect(awsClient.UpsertStackCall.Receives.StackName).To(BeEmpty())
 				Expect(awsClient.WaitForStackCall.Receives.StackName).To(BeEmpty())
 			})

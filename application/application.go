@@ -36,18 +36,18 @@ func (a *Application) Boot(stackName string) error {
 		return fmt.Errorf("invalid name: must match pattern %s", StackNamePattern)
 	}
 
+	a.Logger.Printf("Creating keypair...")
+	_, err := a.AWSClient.CreateKeyPair(stackName)
+	if err != nil {
+		return err
+	}
+
 	a.Logger.Println("Looking for latest AWS NAT box AMI...")
 	natInstanceAMI, err := a.AWSClient.GetLatestNATBoxAMIID()
 	if err != nil {
 		return err
 	}
 	a.Logger.Printf("Latest NAT box AMI is %q\n", natInstanceAMI)
-
-	a.Logger.Printf("Creating keypair...")
-	_, err = a.AWSClient.CreateKeyPair(stackName)
-	if err != nil {
-		return err
-	}
 
 	parameters := map[string]string{
 		"NATInstanceAMI": natInstanceAMI,

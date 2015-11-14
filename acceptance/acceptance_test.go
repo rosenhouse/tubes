@@ -56,23 +56,23 @@ var _ = Describe("The CLI", func() {
 			const StackChangeTimeout = "4m"
 
 			By("booting a fresh environment", func() {
-				session := start(envVars, "up", stackName)
+				session := start(envVars, "-n", stackName, "up")
 
-				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Looking for latest AWS NAT box AMI"))
-				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("ami-[a-f0-9]*"))
-				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Creating keypair"))
-				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Upserting stack"))
-				Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Finished"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Creating keypair"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Looking for latest AWS NAT box AMI"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("ami-[a-f0-9]*"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting stack"))
+				Eventually(session.Err, StackChangeTimeout).Should(gbytes.Say("Finished"))
 				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 			})
 
 			By("tearing down the environment", func() {
-				session := start(envVars, "down", stackName)
+				session := start(envVars, "-n", stackName, "down")
 
-				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Deleting stack"))
-				Eventually(session.Out, StackChangeTimeout).Should(gbytes.Say("Delete complete"))
-				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Deleting keypair"))
-				Eventually(session.Out, NormalTimeout).Should(gbytes.Say("Finished"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting stack"))
+				Eventually(session.Err, StackChangeTimeout).Should(gbytes.Say("Delete complete"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting keypair"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Finished"))
 				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 			})
 		})
@@ -92,37 +92,35 @@ var _ = Describe("The CLI", func() {
 			It("should print a useful error", func() {
 				session := start(nil, []string{}...)
 				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
-				Expect(session.Out.Contents()).To(ContainSubstring("usage: tubes action stack-name"))
+				Expect(session.Err.Contents()).To(ContainSubstring("specify one command of: down, show or up"))
 			})
 		})
 
 		Context("when the action is unknown", func() {
 			It("should print a useful error", func() {
-				session := start(envVars, "nonsense_action", stackName)
+				session := start(envVars, "-n", stackName, "nonsense_action")
 				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
-				Expect(session.Out.Contents()).To(ContainSubstring(`invalid action "nonsense_action"`))
+				Expect(session.Err.Contents()).To(ContainSubstring("Unknown command"))
+				Expect(session.Err.Contents()).To(ContainSubstring("specify one command of: down, show or up"))
 			})
 		})
 
 		Context("when required env vars are missing", func() {
-			It("should print out all the missing ones", func() {
+			It("should print a useful error", func() {
 				delete(envVars, "AWS_SECRET_ACCESS_KEY")
-				envVars["AWS_DEFAULT_REGION"] = "" // two different ways to miss an env var!
 
-				session := start(envVars, "up", stackName)
+				session := start(envVars, "-n", stackName, "up")
 
 				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
-				Expect(session.Out.Contents()).To(ContainSubstring("missing required environment variable"))
-				Expect(session.Out.Contents()).To(ContainSubstring("AWS_DEFAULT_REGION"))
-				Expect(session.Out.Contents()).To(ContainSubstring("AWS_SECRET_ACCESS_KEY"))
+				Expect(session.Err).To(gbytes.Say("missing .* AWS config"))
 			})
 		})
 
 		Context("when the stack name is invalid", func() {
 			It("should return a useful error", func() {
-				session := start(envVars, "up", "invalid_stack_name")
+				session := start(envVars, "-n", "invalid_stack_name", "up")
 				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
-				Expect(session.Out.Contents()).To(ContainSubstring("invalid name: must match pattern"))
+				Expect(session.Err.Contents()).To(ContainSubstring("invalid name: must match pattern"))
 			})
 		})
 
@@ -130,10 +128,10 @@ var _ = Describe("The CLI", func() {
 			It("should inform the user", func() {
 				envVars["AWS_SECRET_ACCESS_KEY"] = "some-invalid-key"
 
-				session := start(envVars, "up", stackName)
+				session := start(envVars, "-n", stackName, "up")
 
 				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
-				Expect(session.Out.Contents()).To(ContainSubstring("AWS was not able to validate the provided access credentials"))
+				Expect(session.Err.Contents()).To(ContainSubstring("AWS was not able to validate the provided access credentials"))
 			})
 		})
 	})

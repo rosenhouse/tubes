@@ -23,6 +23,8 @@ type Config struct {
 type ec2Client interface {
 	DescribeImages(*ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error)
 	DescribeSubnets(*ec2.DescribeSubnetsInput) (*ec2.DescribeSubnetsOutput, error)
+	CreateKeyPair(*ec2.CreateKeyPairInput) (*ec2.CreateKeyPairOutput, error)
+	DeleteKeyPair(*ec2.DeleteKeyPairInput) (*ec2.DeleteKeyPairOutput, error)
 }
 
 type cloudformationClient interface {

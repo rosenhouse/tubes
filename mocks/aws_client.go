@@ -36,6 +36,23 @@ type AWSClient struct {
 			Error error
 		}
 	}
+	DeleteKeyPairCall struct {
+		Receives struct {
+			StackName string
+		}
+		Returns struct {
+			Error error
+		}
+	}
+	CreateKeyPairCall struct {
+		Receives struct {
+			StackName string
+		}
+		Returns struct {
+			KeyPair string
+			Error   error
+		}
+	}
 }
 
 func (c *AWSClient) GetLatestNATBoxAMIID() (string, error) {
@@ -58,4 +75,14 @@ func (c *AWSClient) WaitForStack(stackName string, pundit awsclient.CloudFormati
 func (c *AWSClient) DeleteStack(stackName string) error {
 	c.DeleteStackCall.Receives.StackName = stackName
 	return c.DeleteStackCall.Returns.Error
+}
+
+func (c *AWSClient) CreateKeyPair(stackName string) (string, error) {
+	c.CreateKeyPairCall.Receives.StackName = stackName
+	return c.CreateKeyPairCall.Returns.KeyPair, c.CreateKeyPairCall.Returns.Error
+}
+
+func (c *AWSClient) DeleteKeyPair(stackName string) error {
+	c.DeleteKeyPairCall.Receives.StackName = stackName
+	return c.DeleteKeyPairCall.Returns.Error
 }

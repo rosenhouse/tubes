@@ -20,7 +20,9 @@ var _ = Describe("Generating a deployment manifest for a BOSH Director", func() 
 		expectedManifestString string
 		expectedManifest       manifests.Manifest
 		softwareConfig         Software
-		awsConfig              AWSConfig
+		awsNetwork             AWSNetwork
+		awsCredentials         AWSCredentials
+		awsSSHKey              AWSSSHKey
 		generator              DirectorManifestGenerator
 		directorConfig         DirectorConfig
 	)
@@ -40,24 +42,27 @@ var _ = Describe("Generating a deployment manifest for a BOSH Director", func() 
 				SHA: "3380b55948abe4c437dee97f67d2d8df4eec3fc1",
 			},
 		}
-		awsConfig = AWSConfig{
-			InstanceType:     "m3.xlarge",
-			AvailabilityZone: "AVAILABILITY-ZONE",
-			BOSHSubnet: AWSSubnet{
-				CIDR:     "10.0.0.0/24",
-				SubnetID: "SUBNET-ID",
-			},
-			ElasticIP:       "ELASTIC-IP",
-			PrivateKeyPath:  "./bosh.pem",
+		awsCredentials = AWSCredentials{
+			Region:          "us-east-1",
 			AccessKeyID:     "ACCESS-KEY-ID",
 			SecretAccessKey: "SECRET-ACCESS-KEY",
-			PrivateKeyName:  "bosh",
-			SecurityGroup:   "bosh",
-			Region:          "us-east-1",
+		}
+		awsSSHKey = AWSSSHKey{
+			Name: "bosh",
+			Path: "./bosh.pem",
+		}
+		awsNetwork = AWSNetwork{
+			AvailabilityZone: "AVAILABILITY-ZONE",
+			BOSHSubnetCIDR:   "10.0.0.0/24",
+			BOSHSubnetID:     "SUBNET-ID",
+			ElasticIP:        "ELASTIC-IP",
+			SecurityGroup:    "bosh",
 		}
 		directorConfig = DirectorConfig{
-			Software:  softwareConfig,
-			AWSConfig: awsConfig,
+			Software:       softwareConfig,
+			AWSCredentials: awsCredentials,
+			AWSSSHKey:      awsSSHKey,
+			AWSNetwork:     awsNetwork,
 			Credentials: Credentials{
 				MBus:              "mbus-password",
 				NATS:              "nats-password",

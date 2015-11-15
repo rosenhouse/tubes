@@ -48,6 +48,22 @@ func (a *Application) Boot(stackName string) error {
 	if err != nil {
 		return err
 	}
+	a.Logger.Println("Stack update complete")
+
+	baseStackResources, err := a.AWSClient.GetBaseStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	manifestYAML, err := a.ManifestBuilder.Build(stackName, baseStackResources)
+	if err != nil {
+		return err
+	}
+
+	err = a.ConfigStore.Set(fmt.Sprintf("%s/%s", stackName, "director.yml"), manifestYAML)
+	if err != nil {
+		return err
+	}
 
 	a.Logger.Println("Finished")
 	return nil

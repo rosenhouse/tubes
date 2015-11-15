@@ -23,6 +23,7 @@ var _ = Describe("Up", func() {
 		Expect(logBuffer).To(gbytes.Say("Looking for latest AWS NAT box AMI..."))
 		Expect(logBuffer).To(gbytes.Say("Latest NAT box AMI is \"some-nat-box-ami-id\""))
 		Expect(logBuffer).To(gbytes.Say("Upserting stack..."))
+		Expect(logBuffer).To(gbytes.Say("Stack update complete"))
 		Expect(logBuffer).To(gbytes.Say("Finished"))
 
 		Expect(awsClient.UpsertStackCall.Receives.StackName).To(Equal(stackName))
@@ -55,6 +56,33 @@ var _ = Describe("Up", func() {
 			[]byte("some pem bytes")))
 	})
 
+	It("should get the base stack resources", func() {
+		Expect(app.Boot(stackName)).To(Succeed())
+		Expect(awsClient.GetBaseStackResourcesCall.Receives.StackName).To(Equal(stackName))
+	})
+
+	It("should provide the stack resources to the manifest builder", func() {
+		resources := awsclient.BaseStackResources{
+			AccountID: "ping pong",
+		}
+		awsClient.GetBaseStackResourcesCall.Returns.Resources = resources
+		Expect(app.Boot(stackName)).To(Succeed())
+
+		Expect(manifestBuilder.BuildCall.Receives.StackName).To(Equal(stackName))
+		Expect(manifestBuilder.BuildCall.Receives.Resources).To(Equal(resources))
+	})
+
+	It("should store the manifest", func() {
+		manifestBuilder.BuildCall.Returns.ManifestYAML = []byte("some-manifest-bytes")
+
+		Expect(app.Boot(stackName)).To(Succeed())
+
+		Expect(configStore.Values).To(HaveKeyWithValue(
+			stackName+"/director.yml",
+			[]byte("some-manifest-bytes"),
+		))
+	})
+
 	Context("when the stackName contains invalid characters", func() {
 		It("should immediately error", func() {
 			Expect(app.Boot("invalid_name")).To(MatchError(fmt.Sprintf("invalid name: must match pattern %s", application.StackNamePattern)))
@@ -78,6 +106,8 @@ var _ = Describe("Up", func() {
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
 			Expect(awsClient.UpsertStackCall.Receives.StackName).To(BeEmpty())
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Looking for latest AWS NAT box AMI"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
 	})
 
@@ -86,6 +116,8 @@ var _ = Describe("Up", func() {
 			configStore.Errors[stackName+"/ssh-key"] = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Upserting stack..."))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
 	})
 
@@ -95,6 +127,8 @@ var _ = Describe("Up", func() {
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
 			Expect(awsClient.WaitForStackCall.Receives.StackName).To(BeEmpty())
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Stack update complete"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
 	})
 
@@ -103,6 +137,35 @@ var _ = Describe("Up", func() {
 			awsClient.WaitForStackCall.Returns.Error = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
+
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Stack update complete"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
 	})
+
+	Context("when getting the base stack resources fails", func() {
+		It("should return the error", func() {
+			awsClient.GetBaseStackResourcesCall.Returns.Error = errors.New("boom")
+
+			Expect(app.Boot(stackName)).To(MatchError("boom"))
+		})
+	})
+
+	Context("when building the manifest yaml errors", func() {
+		It("should return the error", func() {
+			manifestBuilder.BuildCall.Returns.Error = errors.New("some error")
+
+			Expect(app.Boot(stackName)).To(MatchError("some error"))
+		})
+	})
+
+	Context("when storing the manifest yaml fails", func() {
+		It("should return an error", func() {
+			configStore.Errors[stackName+"/director.yml"] = errors.New("some error")
+
+			Expect(app.Boot(stackName)).To(MatchError("some error"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
+		})
+	})
+
 })

@@ -53,6 +53,15 @@ type AWSClient struct {
 			Error   error
 		}
 	}
+	GetBaseStackResourcesCall struct {
+		Receives struct {
+			StackName string
+		}
+		Returns struct {
+			Resources awsclient.BaseStackResources
+			Error     error
+		}
+	}
 }
 
 func (c *AWSClient) GetLatestNATBoxAMIID() (string, error) {
@@ -85,4 +94,9 @@ func (c *AWSClient) CreateKeyPair(stackName string) (string, error) {
 func (c *AWSClient) DeleteKeyPair(stackName string) error {
 	c.DeleteKeyPairCall.Receives.StackName = stackName
 	return c.DeleteKeyPairCall.Returns.Error
+}
+
+func (c *AWSClient) GetBaseStackResources(stackName string) (awsclient.BaseStackResources, error) {
+	c.GetBaseStackResourcesCall.Receives.StackName = stackName
+	return c.GetBaseStackResourcesCall.Returns.Resources, c.GetBaseStackResourcesCall.Returns.Error
 }

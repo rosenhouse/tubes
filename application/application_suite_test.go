@@ -29,24 +29,27 @@ var (
 
 	app *application.Application
 
-	stackName    string
-	logBuffer    *gbytes.Buffer
-	resultBuffer *gbytes.Buffer
-	configStore  *mocks.FunctionalConfigStore
+	stackName       string
+	logBuffer       *gbytes.Buffer
+	resultBuffer    *gbytes.Buffer
+	configStore     *mocks.FunctionalConfigStore
+	manifestBuilder *mocks.ManifestBuilder
 )
 
 var _ = BeforeEach(func() {
 	awsClient = &mocks.AWSClient{}
 	configStore = mocks.NewFunctionalConfigStore()
+	manifestBuilder = &mocks.ManifestBuilder{}
 
 	logBuffer = gbytes.NewBuffer()
 	resultBuffer = gbytes.NewBuffer()
 
 	app = &application.Application{
-		AWSClient:    awsClient,
-		Logger:       log.New(logBuffer, "", 0),
-		ResultWriter: resultBuffer,
-		ConfigStore:  configStore,
+		AWSClient:       awsClient,
+		Logger:          log.New(logBuffer, "", 0),
+		ResultWriter:    resultBuffer,
+		ConfigStore:     configStore,
+		ManifestBuilder: manifestBuilder,
 	}
 
 	stackName = fmt.Sprintf("some-stack-name-%x", rand.Int31())

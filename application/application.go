@@ -13,6 +13,7 @@ type awsClient interface {
 	DeleteStack(stackName string) error
 	CreateKeyPair(stackName string) (string, error)
 	DeleteKeyPair(stackName string) error
+	GetBaseStackResources(stackName string) (awsclient.BaseStackResources, error)
 }
 
 type logger interface {
@@ -27,9 +28,14 @@ type configStore interface {
 	Set(string, []byte) error
 }
 
+type manifestBuilder interface {
+	Build(name string, resources awsclient.BaseStackResources) ([]byte, error)
+}
+
 type Application struct {
-	AWSClient    awsClient
-	Logger       logger
-	ResultWriter io.Writer
-	ConfigStore  configStore
+	AWSClient       awsClient
+	Logger          logger
+	ResultWriter    io.Writer
+	ConfigStore     configStore
+	ManifestBuilder manifestBuilder
 }

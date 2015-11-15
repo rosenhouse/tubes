@@ -7,6 +7,26 @@ import (
 	. "github.com/rosenhouse/tubes/lib/manifests"
 )
 
+type DirectorConfig struct {
+	Software       Software
+	Credentials    Credentials
+	InternalIP     string
+	AWSNetwork     AWSNetwork
+	AWSCredentials AWSCredentials
+	AWSSSHKey      AWSSSHKey
+}
+
+type Software struct {
+	BoshDirectorRelease Artifact
+	BoshAWSCPIRelease   Artifact
+	Stemcell            Artifact
+}
+
+type Artifact struct {
+	URL string
+	SHA string
+}
+
 type Credentials struct {
 	MBus              string
 	NATS              string
@@ -19,40 +39,23 @@ type Credentials struct {
 	Admin             string
 }
 
-type Artifact struct {
-	URL string
-	SHA string
-}
-
-type Software struct {
-	BoshDirectorRelease Artifact
-	BoshAWSCPIRelease   Artifact
-	Stemcell            Artifact
-}
-
-type AWSConfig struct {
-	Region           string
-	AccessKeyID      string
-	SecretAccessKey  string
-	PrivateKeyName   string
-	PrivateKeyPath   string
+type AWSNetwork struct {
 	AvailabilityZone string
-	InstanceType     string
-	BOSHSubnet       AWSSubnet
+	BOSHSubnetCIDR   string
+	BOSHSubnetID     string
 	ElasticIP        string
 	SecurityGroup    string
 }
 
-type AWSSubnet struct {
-	CIDR     string
-	SubnetID string
+type AWSCredentials struct {
+	Region          string
+	AccessKeyID     string
+	SecretAccessKey string
 }
 
-type DirectorConfig struct {
-	Software    Software
-	AWSConfig   AWSConfig
-	Credentials Credentials
-	InternalIP  string
+type AWSSSHKey struct {
+	Name string
+	Path string
 }
 
 var defaultEphemeralDisk = EphemeralDisk{
@@ -66,24 +69,26 @@ var defaultDiskPool = DiskPool{
 	CloudProperties: DiskPoolCloudProperties{Type: "gp2"},
 }
 
-func incrementIP(ip net.IP, amount byte) net.IP {
+var defaultInstanceType = "m3.xlarge"
+
+func IncrementIP(ip net.IP, amount byte) net.IP {
 	cloned := append([]byte(nil), ip...)
 	cloned[3] += amount
 	return cloned
 }
 
-func convertSubnet(awsSubnet AWSSubnet) (Subnet, error) {
-	_, ipnet, err := net.ParseCIDR(awsSubnet.CIDR)
+func convertSubnet(subnetCIDR, subnetID string) (Subnet, error) {
+	_, ipnet, err := net.ParseCIDR(subnetCIDR)
 	if err != nil {
 		return Subnet{}, err
 	}
-	gateway := incrementIP(ipnet.IP, 1)
-	dns := incrementIP(ipnet.IP, 2)
+	gateway := IncrementIP(ipnet.IP, 1)
+	dns := IncrementIP(ipnet.IP, 2)
 	return Subnet{
 		Range:           ipnet.String(),
 		Gateway:         gateway.String(),
 		DNS:             []string{dns.String()},
-		CloudProperties: SubnetCloudProperties{Subnet: awsSubnet.SubnetID},
+		CloudProperties: SubnetCloudProperties{Subnet: subnetID},
 	}, nil
 }
 
@@ -92,14 +97,14 @@ type DirectorManifestGenerator struct{}
 func (g DirectorManifestGenerator) Generate(d DirectorConfig) (Manifest, error) {
 
 	awsProperties := map[interface{}]interface{}{
-		"access_key_id":           d.AWSConfig.AccessKeyID,
-		"secret_access_key":       d.AWSConfig.SecretAccessKey,
-		"default_key_name":        d.AWSConfig.PrivateKeyName,
-		"default_security_groups": []interface{}{d.AWSConfig.SecurityGroup},
-		"region":                  d.AWSConfig.Region,
+		"access_key_id":           d.AWSCredentials.AccessKeyID,
+		"secret_access_key":       d.AWSCredentials.SecretAccessKey,
+		"default_key_name":        d.AWSSSHKey.Name,
+		"default_security_groups": []interface{}{d.AWSNetwork.SecurityGroup},
+		"region":                  d.AWSCredentials.Region,
 	}
 
-	privateSubnet, err := convertSubnet(d.AWSConfig.BOSHSubnet)
+	privateSubnet, err := convertSubnet(d.AWSNetwork.BOSHSubnetCIDR, d.AWSNetwork.BOSHSubnetID)
 	if err != nil {
 		return Manifest{}, err
 	}
@@ -124,8 +129,8 @@ func (g DirectorManifestGenerator) Generate(d DirectorConfig) (Manifest, error) 
 				SHA1: d.Software.Stemcell.SHA,
 			},
 			CloudProperties: ResourcePoolCloudProperties{
-				InstanceType:     d.AWSConfig.InstanceType,
-				AvailabilityZone: d.AWSConfig.AvailabilityZone,
+				InstanceType:     defaultInstanceType,
+				AvailabilityZone: d.AWSNetwork.AvailabilityZone,
 				EphemeralDisk:    defaultEphemeralDisk,
 			},
 		},
@@ -182,7 +187,7 @@ func (g DirectorManifestGenerator) Generate(d DirectorConfig) (Manifest, error) 
 			},
 			{
 				Name:      eipNetwork.Name,
-				StaticIPs: []string{d.AWSConfig.ElasticIP},
+				StaticIPs: []string{d.AWSNetwork.ElasticIP},
 			},
 		},
 		Properties: map[string]interface{}{
@@ -267,12 +272,12 @@ func (g DirectorManifestGenerator) Generate(d DirectorConfig) (Manifest, error) 
 			Release: cpiRelease.Name,
 		},
 		SSHTunnel: SSHTunnel{
-			Host:       d.AWSConfig.ElasticIP,
+			Host:       d.AWSNetwork.ElasticIP,
 			Port:       22,
 			User:       "vcap",
-			PrivateKey: d.AWSConfig.PrivateKeyPath,
+			PrivateKey: d.AWSSSHKey.Path,
 		},
-		MBus: fmt.Sprintf("https://mbus:%s@%s:6868", d.Credentials.MBus, d.AWSConfig.ElasticIP),
+		MBus: fmt.Sprintf("https://mbus:%s@%s:6868", d.Credentials.MBus, d.AWSNetwork.ElasticIP),
 		Properties: map[string]interface{}{
 			"aws": awsProperties,
 			"agent": map[interface{}]interface{}{

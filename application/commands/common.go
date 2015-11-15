@@ -9,6 +9,9 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/rosenhouse/tubes/application"
 	"github.com/rosenhouse/tubes/lib/awsclient"
+	"github.com/rosenhouse/tubes/lib/boshio"
+	"github.com/rosenhouse/tubes/lib/credentials"
+	"github.com/rosenhouse/tubes/lib/director"
 )
 
 func parseError(fmtString string, args ...interface{}) *flags.Error {
@@ -67,10 +70,27 @@ func (options *CLIOptions) initApp(args []string) (*application.Application, err
 
 	configStore := &application.FilesystemConfigStore{RootDir: workingDir}
 
+	httpClient := &boshio.HTTPClient{
+		BaseURL: "https://bosh.io",
+	}
+
 	return &application.Application{
 		AWSClient:    awsClient,
 		Logger:       log.New(os.Stderr, "", 0),
 		ResultWriter: os.Stdout,
 		ConfigStore:  configStore,
+		ManifestBuilder: &application.ManifestBuilder{
+			DirectorManifestGenerator: director.DirectorManifestGenerator{},
+			BoshIOClient: &boshio.Client{
+				JSONClient: &boshio.JSONClient{httpClient},
+				HTTPClient: httpClient,
+			},
+			CredentialsGenerator: credentials.Generator{Length: 12},
+			AWSCredentials: director.AWSCredentials{
+				Region:          options.AWSConfig.Region,
+				AccessKeyID:     options.AWSConfig.AccessKey,
+				SecretAccessKey: options.AWSConfig.SecretKey,
+			},
+		},
 	}, nil
 }

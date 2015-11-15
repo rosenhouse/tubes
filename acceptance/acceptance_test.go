@@ -1,9 +1,13 @@
 package acceptance_test
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os/exec"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,8 +18,9 @@ import (
 
 var _ = Describe("The CLI", func() {
 	var (
-		stackName string
-		envVars   map[string]string
+		stackName  string
+		envVars    map[string]string
+		workingDir string
 	)
 
 	var start = func(envVars map[string]string, args ...string) *gexec.Session {
@@ -26,6 +31,7 @@ var _ = Describe("The CLI", func() {
 				command.Env = append(command.Env, fmt.Sprintf("%s=%s", k, v))
 			}
 		}
+		command.Dir = workingDir
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		return session
@@ -33,6 +39,9 @@ var _ = Describe("The CLI", func() {
 
 	BeforeEach(func() {
 		stackName = fmt.Sprintf("tubes-acceptance-test-%x", rand.Int())
+		var err error
+		workingDir, err = ioutil.TempDir("", "tubes-acceptance-test")
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Describe("happy path", func() {
@@ -64,6 +73,23 @@ var _ = Describe("The CLI", func() {
 				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting stack"))
 				Eventually(session.Err, StackChangeTimeout).Should(gbytes.Say("Finished"))
 				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+			})
+
+			By("storing the SSH key on the filesystem", func() {
+				Expect(ioutil.ReadFile(filepath.Join(workingDir, stackName, "ssh-key"))).To(ContainSubstring("RSA PRIVATE KEY"))
+			})
+
+			By("exposing the SSH key", func() {
+				session := start(envVars, "-n", stackName, "show")
+
+				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+
+				pemBlock, _ := pem.Decode(session.Out.Contents())
+				Expect(pemBlock).NotTo(BeNil())
+				Expect(pemBlock.Type).To(Equal("RSA PRIVATE KEY"))
+
+				_, err := x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			By("tearing down the environment", func() {

@@ -19,7 +19,6 @@ type Down struct {
 
 type Show struct {
 	*CLIOptions `no-flag:"true"`
-	SSHKey      bool `short:"k" long:"ssh-key" description:"print the SSH key to stdout"`
 }
 
 type AWSConfig struct {

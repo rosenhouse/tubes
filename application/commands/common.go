@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/rosenhouse/tubes/application"
 	"github.com/rosenhouse/tubes/lib/awsclient"
 )
-
-const StackNamePattern = `^[a-zA-Z][-a-zA-Z0-9]*$`
 
 func parseError(fmtString string, args ...interface{}) *flags.Error {
 	return &flags.Error{Message: fmt.Sprintf(fmtString, args...)}
@@ -22,11 +19,6 @@ func (c *CLIOptions) checkStackName() error {
 	name := c.Name
 	if name == "" {
 		return parseError("missing required flag name")
-	}
-
-	regex := regexp.MustCompile(StackNamePattern)
-	if !regex.MatchString(name) {
-		return parseError("invalid name: must match pattern %s", StackNamePattern)
 	}
 
 	return nil
@@ -68,8 +60,17 @@ func (options *CLIOptions) initApp(args []string) (*application.Application, err
 		return nil, err
 	}
 
+	workingDir, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	configStore := &application.FilesystemConfigStore{RootDir: workingDir}
+
 	return &application.Application{
-		AWSClient: awsClient,
-		Logger:    log.New(os.Stderr, "", 0),
+		AWSClient:    awsClient,
+		Logger:       log.New(os.Stderr, "", 0),
+		ResultWriter: os.Stdout,
+		ConfigStore:  configStore,
 	}, nil
 }

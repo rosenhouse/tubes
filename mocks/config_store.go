@@ -36,3 +36,24 @@ func (s *ConfigStore) Set(key string, value []byte) error {
 	s.SetCall.Receives.Value = value
 	return s.SetCall.Returns.Error
 }
+
+func NewFunctionalConfigStore() *FunctionalConfigStore {
+	return &FunctionalConfigStore{
+		Values: make(map[string][]byte),
+		Errors: make(map[string]error),
+	}
+}
+
+type FunctionalConfigStore struct {
+	Values map[string][]byte
+	Errors map[string]error
+}
+
+func (s *FunctionalConfigStore) Get(key string) ([]byte, error) {
+	return s.Values[key], s.Errors[key]
+}
+
+func (s *FunctionalConfigStore) Set(key string, value []byte) error {
+	s.Values[key] = value
+	return s.Errors[key]
+}

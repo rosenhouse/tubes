@@ -50,8 +50,9 @@ var _ = Describe("Up", func() {
 		awsClient.CreateKeyPairCall.Returns.KeyPair = "some pem bytes"
 		Expect(app.Boot(stackName)).To(Succeed())
 
-		Expect(configStore.SetCall.Receives.Key).To(Equal(stackName + "/ssh-key"))
-		Expect(configStore.SetCall.Receives.Value).To(Equal([]byte("some pem bytes")))
+		Expect(configStore.Values).To(HaveKeyWithValue(
+			stackName+"/ssh-key",
+			[]byte("some pem bytes")))
 	})
 
 	Context("when the stackName contains invalid characters", func() {
@@ -82,7 +83,7 @@ var _ = Describe("Up", func() {
 
 	Context("when storing the ssh key fails", func() {
 		It("should return an error", func() {
-			configStore.SetCall.Returns.Error = errors.New("some error")
+			configStore.Errors[stackName+"/ssh-key"] = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
 		})

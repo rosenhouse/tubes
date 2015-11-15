@@ -32,12 +32,12 @@ var (
 	stackName    string
 	logBuffer    *gbytes.Buffer
 	resultBuffer *gbytes.Buffer
-	configStore  *mocks.ConfigStore
+	configStore  *mocks.FunctionalConfigStore
 )
 
 var _ = BeforeEach(func() {
 	awsClient = &mocks.AWSClient{}
-	configStore = mocks.NewConfigStore()
+	configStore = mocks.NewFunctionalConfigStore()
 
 	logBuffer = gbytes.NewBuffer()
 	resultBuffer = gbytes.NewBuffer()

@@ -35,6 +35,9 @@ var _ = Describe("ManifestBuilder", func() {
 			BOSHSubnetID:      "some-subnet-id",
 			BOSHElasticIP:     "some-elastic-ip",
 			BOSHSecurityGroup: "some-security-group",
+			AWSRegion:         "some-region",
+			BOSHAccessKey:     "some-access-key",
+			BOSHSecretKey:     "some-secret-key",
 		}
 		stackName = fmt.Sprintf("some-stack-name-%x", rand.Int31())
 
@@ -42,11 +45,6 @@ var _ = Describe("ManifestBuilder", func() {
 			DirectorManifestGenerator: directorManifestGenerator,
 			BoshIOClient:              boshioClient,
 			CredentialsGenerator:      credentialsGenerator,
-			AWSCredentials: director.AWSCredentials{
-				Region:          "some-region",
-				AccessKeyID:     "some-access-key",
-				SecretAccessKey: "some-secret-key",
-			},
 		}
 
 		boshioClient.LatestStemcellCall.Returns.Artifact.URL = "some-stemcell-url"
@@ -174,7 +172,11 @@ var _ = Describe("ManifestBuilder", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			awsCredentials := directorManifestGenerator.GenerateCall.Receives.Config.AWSCredentials
-			Expect(awsCredentials).To(Equal(manifestBuilder.AWSCredentials))
+			Expect(awsCredentials).To(Equal(director.AWSCredentials{
+				Region:          "some-region",
+				AccessKeyID:     "some-access-key",
+				SecretAccessKey: "some-secret-key",
+			}))
 		})
 	})
 

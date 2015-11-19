@@ -104,11 +104,6 @@ func (options *CLIOptions) InitApp(args []string) (*application.Application, err
 				HTTPClient: httpClient,
 			},
 			CredentialsGenerator: credentials.Generator{Length: 12},
-			AWSCredentials: director.AWSCredentials{
-				Region:          options.AWSConfig.Region,
-				AccessKeyID:     options.AWSConfig.AccessKey,
-				SecretAccessKey: options.AWSConfig.SecretKey,
-			},
 		},
 	}, nil
 }

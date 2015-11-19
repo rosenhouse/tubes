@@ -71,6 +71,7 @@ var _ = Describe("Idempotent upsert of a CloudFormation stack", func() {
 				[]*cloudformation.Tag{
 					&cloudformation.Tag{Key: aws.String("Name"), Value: aws.String(stackName)},
 				}))
+			Expect(cloudFormationClient.CreateStackCall.Receives.Input.Capabilities).To(Equal([]*string{aws.String("CAPABILITY_IAM")}))
 
 			Expect(cloudFormationClient.UpdateStackCall.Receives.Input).To(BeNil())
 		})
@@ -104,6 +105,7 @@ var _ = Describe("Idempotent upsert of a CloudFormation stack", func() {
 						&cloudformation.Parameter{ParameterKey: aws.String("c"), ParameterValue: aws.String("d")},
 						&cloudformation.Parameter{ParameterKey: aws.String("e"), ParameterValue: aws.String("f")},
 					}))
+				Expect(cloudFormationClient.UpdateStackCall.Receives.Input.Capabilities).To(Equal([]*string{aws.String("CAPABILITY_IAM")}))
 			})
 
 			Context("when UpdateStack returns an error because there are no changes", func() {

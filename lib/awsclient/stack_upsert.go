@@ -31,6 +31,7 @@ func (c *Client) createStack(stackName string, template string, parameters map[s
 				Value: aws.String(stackName),
 			},
 		},
+		Capabilities: []*string{aws.String("CAPABILITY_IAM")},
 	})
 	return err
 }
@@ -51,6 +52,7 @@ func (c *Client) updateStack(stackName string, template string, parameters map[s
 		StackName:    aws.String(stackName),
 		TemplateBody: aws.String(template),
 		Parameters:   formatParameters(parameters),
+		Capabilities: []*string{aws.String("CAPABILITY_IAM")},
 	})
 	if errorIsBecauseNoOp(err) {
 		return nil

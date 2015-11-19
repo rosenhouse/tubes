@@ -1,6 +1,28 @@
 {
         "AWSTemplateFormatVersion": "2010-09-09",
+        "Outputs": {
+            "BOSHDirectorUserAccessKey": {
+                "Description": "BOSH Director User Access Key ID",
+                "Value": { "Ref": "BOSHDirectorCredentials" }
+            },
+            "BOSHDirectorUserSecretKey" : {
+                "Description" : "BOSH Director User Secret Access Key",
+                "Value": { "Fn::GetAtt" : [ "BOSHDirectorCredentials", "SecretAccessKey"]}
+            }
+        },
         "Resources": {
+            "BOSHDirectorUser": {
+                "Type" : "AWS::IAM::User",
+                "Properties": {
+                    "ManagedPolicyArns": [ "arn:aws:iam::aws:policy/AdministratorAccess" ]
+                }
+            },
+            "BOSHDirectorCredentials": {
+                "Type" : "AWS::IAM::AccessKey",
+                "Properties": {
+                    "UserName": { "Ref": "BOSHDirectorUser" }
+                }
+            },
             "NATSecurityGroup": {
                 "Type": "AWS::EC2::SecurityGroup",
                 "Properties": {

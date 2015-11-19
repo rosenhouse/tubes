@@ -15,6 +15,9 @@ type BaseStackResources struct {
 	BOSHElasticIP     string
 	BOSHSecurityGroup string
 	AccountID         string
+	BOSHAccessKey     string
+	BOSHSecretKey     string
+	AWSRegion         string
 }
 
 func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, error) {
@@ -34,6 +37,7 @@ func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, er
 			return resources, err
 		}
 		resources.AccountID = arn.AccountID
+		resources.AWSRegion = arn.Region
 	}
 
 	var ok bool
@@ -59,6 +63,21 @@ func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, er
 	subnet := *dsOutput.Subnets[0]
 	resources.AvailabilityZone = *subnet.AvailabilityZone
 	resources.BOSHSubnetCIDR = *subnet.CidrBlock
+
+	output2, err := c.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(stackName),
+	})
+	if err != nil {
+		return BaseStackResources{}, err
+	}
+	for _, stackOutput := range output2.Stacks[0].Outputs {
+		switch *stackOutput.OutputKey {
+		case "BOSHDirectorUserAccessKey":
+			resources.BOSHAccessKey = *stackOutput.OutputValue
+		case "BOSHDirectorUserSecretKey":
+			resources.BOSHSecretKey = *stackOutput.OutputValue
+		}
+	}
 
 	return resources, nil
 }

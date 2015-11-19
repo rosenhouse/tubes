@@ -25,7 +25,6 @@ type ManifestBuilder struct {
 	DirectorManifestGenerator directorManifestGenerator
 	BoshIOClient              boshIOClient
 	CredentialsGenerator      credentialsGenerator
-	AWSCredentials            director.AWSCredentials
 }
 
 func (b *ManifestBuilder) getLatestSoftware() (director.Software, error) {
@@ -88,7 +87,11 @@ func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackR
 	config.AWSNetwork = b.getAWSNetwork(resources)
 	config.AWSSSHKey.Name = stackName
 	config.AWSSSHKey.Path = "./ssh-key"
-	config.AWSCredentials = b.AWSCredentials
+	config.AWSCredentials = director.AWSCredentials{
+		Region:          resources.AWSRegion,
+		AccessKeyID:     resources.BOSHAccessKey,
+		SecretAccessKey: resources.BOSHSecretKey,
+	}
 
 	manifest, err := b.DirectorManifestGenerator.Generate(config)
 	if err != nil {

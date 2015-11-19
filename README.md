@@ -4,7 +4,6 @@ something to do with the internet
 
 ## TODO
 Need to have:
-- generate unique IAM credentials for use by BOSH director -- don't expose user's IAM creds
 - bosh-init from jump box
 
 Want to have:

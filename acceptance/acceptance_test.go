@@ -75,8 +75,9 @@ var _ = Describe("The CLI", func() {
 				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 			})
 
+			defaultStateDir := filepath.Join(workingDir, "environments", stackName)
 			By("storing the SSH key on the filesystem", func() {
-				Expect(ioutil.ReadFile(filepath.Join(workingDir, "environments", stackName, "ssh-key"))).To(ContainSubstring("RSA PRIVATE KEY"))
+				Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "ssh-key"))).To(ContainSubstring("RSA PRIVATE KEY"))
 			})
 
 			By("exposing the SSH key", func() {
@@ -93,14 +94,23 @@ var _ = Describe("The CLI", func() {
 			})
 
 			By("supporting an explicit state directory, rather than the implicit subdirectory of the working directory", func() {
-				stateDir := filepath.Join(workingDir, "environments", stackName)
-				session := start(envVars, "-n", stackName, "--state-dir", stateDir, "show")
+				session := start(envVars, "-n", stackName, "--state-dir", defaultStateDir, "show")
 
 				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 
 				pemBlock, _ := pem.Decode(session.Out.Contents())
 				Expect(pemBlock).NotTo(BeNil())
 				Expect(pemBlock.Type).To(Equal("RSA PRIVATE KEY"))
+			})
+
+			By("storing a generated BOSH director manifest in the state directory", func() {
+				directorYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "director.yml"))
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(directorYAMLBytes).To(ContainSubstring("resource_pools:"))
+
+				By("ensuring we create fresh credentials for the BOSH director")
+				Expect(directorYAMLBytes).NotTo(ContainSubstring(envVars["AWS_SECRET_ACCESS_KEY"]))
 			})
 
 			By("tearing down the environment", func() {

@@ -1,6 +1,6 @@
 package awsclient
 
-import . "github.com/aws/aws-sdk-go/service/cloudformation/template"
+import . "github.com/awslabs/aws-cfn-go-template"
 
 var BaseStackTemplate = Template{
 	AWSTemplateFormatVersion: "2010-09-09",

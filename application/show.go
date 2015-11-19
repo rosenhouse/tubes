@@ -1,9 +1,7 @@
 package application
 
-import "fmt"
-
 func (a *Application) Show(stackName string) error {
-	val, err := a.ConfigStore.Get(fmt.Sprintf("%s/%s", stackName, "ssh-key"))
+	val, err := a.ConfigStore.Get("ssh-key")
 	if err != nil {
 		return err
 	}

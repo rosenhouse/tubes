@@ -3,6 +3,7 @@ package commands
 type CLIOptions struct {
 	Name      string    `short:"n" long:"name"  description:"Name of environment to manipulate"`
 	AWSConfig AWSConfig `group:"aws"`
+	StateDir  string    `short:"s" long:"state-dir" description:"Path to directory where state is stored.  Typically you'd track this in a private git repository or other secure location.  Defaults to <working_dir>/environments/<name>"`
 
 	Up   Up   `command:"up" description:"Boot a new environment with the given name"`
 	Down Down `command:"down" description:"Tear down the named environment"`

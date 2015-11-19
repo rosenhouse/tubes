@@ -21,7 +21,7 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 
-	err = a.ConfigStore.Set(fmt.Sprintf("%s/%s", stackName, "ssh-key"), []byte(pemBytes))
+	err = a.ConfigStore.Set("ssh-key", []byte(pemBytes))
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 
-	err = a.ConfigStore.Set(fmt.Sprintf("%s/%s", stackName, "director.yml"), manifestYAML)
+	err = a.ConfigStore.Set("director.yml", manifestYAML)
 	if err != nil {
 		return err
 	}

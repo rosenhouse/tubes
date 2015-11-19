@@ -15,7 +15,7 @@ func (w *erroringWriter) Write(data []byte) (int, error) {
 
 var _ = Describe("Show", func() {
 	It("should print the SSH key to the result writer", func() {
-		configStore.Values[stackName+"/ssh-key"] = []byte("some pem block")
+		configStore.Values["ssh-key"] = []byte("some pem block")
 
 		Expect(app.Show(stackName)).To(Succeed())
 
@@ -24,7 +24,7 @@ var _ = Describe("Show", func() {
 
 	Context("when the config store get errors", func() {
 		It("should return the error", func() {
-			configStore.Errors[stackName+"/ssh-key"] = errors.New("some error")
+			configStore.Errors["ssh-key"] = errors.New("some error")
 			Expect(app.Show(stackName)).To(MatchError("some error"))
 		})
 	})

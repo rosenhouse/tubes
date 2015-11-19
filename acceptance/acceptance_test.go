@@ -76,7 +76,7 @@ var _ = Describe("The CLI", func() {
 			})
 
 			By("storing the SSH key on the filesystem", func() {
-				Expect(ioutil.ReadFile(filepath.Join(workingDir, stackName, "ssh-key"))).To(ContainSubstring("RSA PRIVATE KEY"))
+				Expect(ioutil.ReadFile(filepath.Join(workingDir, "environments", stackName, "ssh-key"))).To(ContainSubstring("RSA PRIVATE KEY"))
 			})
 
 			By("exposing the SSH key", func() {
@@ -90,6 +90,17 @@ var _ = Describe("The CLI", func() {
 
 				_, err := x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
 				Expect(err).NotTo(HaveOccurred())
+			})
+
+			By("supporting an explicit state directory, rather than the implicit subdirectory of the working directory", func() {
+				stateDir := filepath.Join(workingDir, "environments", stackName)
+				session := start(envVars, "-n", stackName, "--state-dir", stateDir, "show")
+
+				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+
+				pemBlock, _ := pem.Decode(session.Out.Contents())
+				Expect(pemBlock).NotTo(BeNil())
+				Expect(pemBlock.Type).To(Equal("RSA PRIVATE KEY"))
 			})
 
 			By("tearing down the environment", func() {

@@ -34,6 +34,7 @@ type manifestBuilder interface {
 
 type Application struct {
 	AWSClient       awsClient
+	StateDir        string
 	Logger          logger
 	ResultWriter    io.Writer
 	ConfigStore     configStore

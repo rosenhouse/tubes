@@ -1,7 +1,7 @@
 package commands
 
 func (c *Up) Execute(args []string) error {
-	app, err := c.initApp(args)
+	app, err := c.InitApp(args)
 	if err != nil {
 		return err
 	}
@@ -10,7 +10,7 @@ func (c *Up) Execute(args []string) error {
 }
 
 func (c *Down) Execute(args []string) error {
-	app, err := c.initApp(args)
+	app, err := c.InitApp(args)
 	if err != nil {
 		return err
 	}
@@ -19,7 +19,7 @@ func (c *Down) Execute(args []string) error {
 }
 
 func (c *Show) Execute(args []string) error {
-	app, err := c.initApp(args)
+	app, err := c.InitApp(args)
 	if err != nil {
 		return err
 	}

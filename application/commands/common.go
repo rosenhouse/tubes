@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/rosenhouse/tubes/application"
@@ -47,7 +48,7 @@ func (c *AWSConfig) buildClient() (*awsclient.Client, error) {
 	return awsclient.New(config), nil
 }
 
-func (options *CLIOptions) initApp(args []string) (*application.Application, error) {
+func (options *CLIOptions) InitApp(args []string) (*application.Application, error) {
 	if options == nil {
 		return nil, errors.New("programming error: missing parent reference in command")
 	}
@@ -63,12 +64,29 @@ func (options *CLIOptions) initApp(args []string) (*application.Application, err
 		return nil, err
 	}
 
-	workingDir, err := os.Getwd()
-	if err != nil {
-		return nil, err
+	stateDir := options.StateDir
+	if stateDir != "" {
+		fileInfo, err := os.Stat(stateDir)
+		if err != nil {
+			return nil, fmt.Errorf("state directory not found: %s", err)
+		}
+		if !fileInfo.IsDir() {
+			return nil, fmt.Errorf("state directory not a directory: %s", stateDir)
+		}
+
+	} else {
+		workingDir, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		stateDir = filepath.Join(workingDir, "environments", options.Name)
+		err = os.MkdirAll(stateDir, 0700)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	configStore := &application.FilesystemConfigStore{RootDir: workingDir}
+	configStore := &application.FilesystemConfigStore{RootDir: stateDir}
 
 	httpClient := &boshio.HTTPClient{
 		BaseURL: "https://bosh.io",

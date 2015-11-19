@@ -52,7 +52,7 @@ var _ = Describe("Up", func() {
 		Expect(app.Boot(stackName)).To(Succeed())
 
 		Expect(configStore.Values).To(HaveKeyWithValue(
-			stackName+"/ssh-key",
+			"ssh-key",
 			[]byte("some pem bytes")))
 	})
 
@@ -78,7 +78,7 @@ var _ = Describe("Up", func() {
 		Expect(app.Boot(stackName)).To(Succeed())
 
 		Expect(configStore.Values).To(HaveKeyWithValue(
-			stackName+"/director.yml",
+			"director.yml",
 			[]byte("some-manifest-bytes"),
 		))
 	})
@@ -113,7 +113,7 @@ var _ = Describe("Up", func() {
 
 	Context("when storing the ssh key fails", func() {
 		It("should return an error", func() {
-			configStore.Errors[stackName+"/ssh-key"] = errors.New("some error")
+			configStore.Errors["ssh-key"] = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Upserting stack..."))
@@ -161,7 +161,7 @@ var _ = Describe("Up", func() {
 
 	Context("when storing the manifest yaml fails", func() {
 		It("should return an error", func() {
-			configStore.Errors[stackName+"/director.yml"] = errors.New("some error")
+			configStore.Errors["director.yml"] = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))

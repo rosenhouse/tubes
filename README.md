@@ -13,6 +13,7 @@ Want to have:
 - Fake AWS for integration tests
 - Fake SSH endpoint for integration tests
 - Create CNAME for bosh director
+- Write a log of resources created
 
 ### Mutable environments
 

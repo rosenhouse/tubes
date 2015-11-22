@@ -1,6 +1,4 @@
 # tubes
-something to do with the internet
-
 
 ## TODO
 Need to have:
@@ -9,10 +7,7 @@ Need to have:
 Want to have:
 - idempotent upsert from state directory
 - BOSH director manifest doesn't use external IP at all (NATs messages stay inside VPC)
-- Fake AWS for integration tests
-  - given an interface which is a subset of an aws-sdk-go service interface
-  - when I pass that interface to my `awsfaker.Fake()` function
-  - then I get back an `http.Handler` that can stand in for the service actions on the interface
+- Complete integration tests against fake AWS
 - Fake SSH endpoint for integration tests
 - Create CNAME for bosh director
 - Write a log of resources created

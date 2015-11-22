@@ -45,7 +45,7 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		workingDir, err = ioutil.TempDir("", "tubes-acceptance-test")
 		Expect(err).NotTo(HaveOccurred())
 
-		fakeAWSBackend = &FakeAWSBackend{}
+		fakeAWSBackend = NewFakeAWSBackend(GinkgoWriter)
 		fakeAWS = httptest.NewServer(awsfaker.New(awsfaker.Backend{EC2: fakeAWSBackend}))
 		envVars = map[string]string{
 			"AWS_DEFAULT_REGION":    "us-west-2",

@@ -37,9 +37,10 @@ func (c *AWSConfig) buildClient() (*awsclient.Client, error) {
 		return val
 	}
 	config := awsclient.Config{
-		Region:    load(c.Region),
-		AccessKey: load(c.AccessKey),
-		SecretKey: load(c.SecretKey),
+		Region:           load(c.Region),
+		AccessKey:        load(c.AccessKey),
+		SecretKey:        load(c.SecretKey),
+		EndpointOverride: os.Getenv("TUBES_AWS_ENDPOINT"),
 	}
 
 	if missing {

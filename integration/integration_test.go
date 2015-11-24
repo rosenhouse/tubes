@@ -1,11 +1,14 @@
 package integration_test
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http/httptest"
 	"os/exec"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -46,7 +49,7 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		fakeAWSBackend = integration.NewFakeAWSBackend(GinkgoWriter)
-		fakeAWS = httptest.NewServer(awsfaker.New(fakeAWSBackend.Backend))
+		fakeAWS = httptest.NewServer(awsfaker.New(fakeAWSBackend.CloudFormation, fakeAWSBackend.EC2))
 		envVars = map[string]string{
 			"AWS_DEFAULT_REGION":    "us-west-2",
 			"AWS_ACCESS_KEY_ID":     "some-access-key-id",
@@ -59,6 +62,71 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		if fakeAWS != nil {
 			fakeAWS.Close()
 		}
+	})
+
+	It("should support basic environment manipulation", func() { // slow happy path
+		const NormalTimeout = "5s"
+
+		By("booting a fresh environment", func() {
+			session := start(envVars, "-n", stackName, "up")
+
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Creating keypair"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Looking for latest AWS NAT box AMI"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("ami-[a-f0-9]*"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting stack"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Stack update complete"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Generating BOSH init manifest"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Finished"))
+			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+		})
+
+		defaultStateDir := filepath.Join(workingDir, "environments", stackName)
+		By("storing the SSH key on the filesystem", func() {
+			Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "ssh-key"))).To(ContainSubstring("RSA PRIVATE KEY"))
+		})
+
+		By("exposing the SSH key", func() {
+			session := start(envVars, "-n", stackName, "show")
+
+			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+
+			pemBlock, _ := pem.Decode(session.Out.Contents())
+			Expect(pemBlock).NotTo(BeNil())
+			Expect(pemBlock.Type).To(Equal("RSA PRIVATE KEY"))
+
+			_, err := x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		By("supporting an explicit state directory, rather than the implicit subdirectory of the working directory", func() {
+			session := start(envVars, "-n", stackName, "--state-dir", defaultStateDir, "show")
+
+			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+
+			pemBlock, _ := pem.Decode(session.Out.Contents())
+			Expect(pemBlock).NotTo(BeNil())
+			Expect(pemBlock.Type).To(Equal("RSA PRIVATE KEY"))
+		})
+
+		By("storing a generated BOSH director manifest in the state directory", func() {
+			directorYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "director.yml"))
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(directorYAMLBytes).To(ContainSubstring("resource_pools:"))
+
+			By("ensuring we create fresh credentials for the BOSH director")
+			Expect(directorYAMLBytes).NotTo(ContainSubstring(envVars["AWS_SECRET_ACCESS_KEY"]))
+		})
+
+		By("tearing down the environment", func() {
+			session := start(envVars, "-n", stackName, "down")
+
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting stack"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Delete complete"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting keypair"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Finished"))
+			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+		})
 	})
 
 	Context("invalid user input", func() { // fast failing cases
@@ -96,15 +164,6 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 				session := start(envVars, "-n", "invalid_stack_name", "up")
 				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
 				Expect(session.Err.Contents()).To(ContainSubstring("invalid name: must match pattern"))
-			})
-		})
-
-		Context("when application errors", func() {
-			It("should inform the user", func() {
-				session := start(envVars, "-n", "some-existing-name", "up")
-
-				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
-				Expect(session.Err.Contents()).To(ContainSubstring("already exists"))
 			})
 		})
 	})

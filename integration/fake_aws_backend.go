@@ -5,23 +5,20 @@ import (
 	"log"
 	"reflect"
 	"strings"
-
-	"github.com/rosenhouse/awsfaker"
 )
 
 type FakeAWSBackend struct {
 	Logger *log.Logger
 
-	*awsfaker.Backend
+	EC2            *fakeEC2
+	CloudFormation *fakeCloudFormation
 }
 
 func NewFakeAWSBackend(logWriter io.Writer) *FakeAWSBackend {
 	b := &FakeAWSBackend{}
 	b.Logger = log.New(logWriter, "[ Fake AWS ] ", 0)
-	b.Backend = &awsfaker.Backend{
-		EC2:            newFakeEC2(b),
-		CloudFormation: newFakeCloudFormation(b),
-	}
+	b.EC2 = newFakeEC2(b)
+	b.CloudFormation = newFakeCloudFormation(b)
 
 	return b
 }

@@ -49,11 +49,13 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 	a.Logger.Println("Stack update complete")
+	a.Logger.Println("Retrieving resource ids")
 
 	baseStackResources, err := a.AWSClient.GetBaseStackResources(stackName)
 	if err != nil {
 		return err
 	}
+	a.Logger.Println("Generating BOSH init manifest")
 
 	manifestYAML, err := a.ManifestBuilder.Build(stackName, baseStackResources)
 	if err != nil {

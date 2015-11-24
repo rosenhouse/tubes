@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"net/http/httptest"
 	"os/exec"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 
 	"github.com/rosenhouse/awsfaker"
+	"github.com/rosenhouse/tubes/integration"
 )
 
 var _ = Describe("Integration (mocking out AWS)", func() {
@@ -21,7 +21,7 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		stackName      string
 		envVars        map[string]string
 		workingDir     string
-		fakeAWSBackend *FakeAWSBackend
+		fakeAWSBackend *integration.FakeAWSBackend
 		fakeAWS        *httptest.Server
 	)
 
@@ -45,7 +45,7 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		workingDir, err = ioutil.TempDir("", "tubes-acceptance-test")
 		Expect(err).NotTo(HaveOccurred())
 
-		fakeAWSBackend = NewFakeAWSBackend(GinkgoWriter)
+		fakeAWSBackend = integration.NewFakeAWSBackend(GinkgoWriter)
 		fakeAWS = httptest.NewServer(awsfaker.New(awsfaker.Backend{EC2: fakeAWSBackend}))
 		envVars = map[string]string{
 			"AWS_DEFAULT_REGION":    "us-west-2",
@@ -101,16 +101,10 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 
 		Context("when application errors", func() {
 			It("should inform the user", func() {
-				fakeAWSBackend.CreateKeyPairCall.ReturnsError = &awsfaker.ErrorResponse{
-					AWSErrorCode:    "BadCredentials",
-					AWSErrorMessage: "Your credentials are bad and you should feel bad",
-					HTTPStatusCode:  http.StatusBadRequest,
-				}
-
-				session := start(envVars, "-n", stackName, "up")
+				session := start(envVars, "-n", "some-existing-name", "up")
 
 				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
-				Expect(session.Err.Contents()).To(ContainSubstring("credentials are bad"))
+				Expect(session.Err.Contents()).To(ContainSubstring("already exists"))
 			})
 		})
 	})

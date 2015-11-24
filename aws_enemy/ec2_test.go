@@ -5,8 +5,9 @@ import (
 	"math/rand"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/rosenhouse/tubes/aws_enemy"
+	. "github.com/rosenhouse/tubes/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,6 +15,7 @@ import (
 
 var _ = Describe("EC2 Key Pairs", func() {
 	var keyName string
+	var ec2Errors aws_enemy.EC2
 
 	BeforeEach(func() {
 		keyName = fmt.Sprintf("test-%x", rand.Int())
@@ -51,10 +53,8 @@ var _ = Describe("EC2 Key Pairs", func() {
 					KeyName: aws.String(keyName),
 				})
 				Expect(err).To(HaveOccurred())
-				awsErr := err.(awserr.RequestFailure)
-				Expect(awsErr.StatusCode()).To(Equal(400))
-				Expect(awsErr.Code()).To(Equal("InvalidKeyPair.Duplicate"))
-				Expect(awsErr.Message()).To(Equal(fmt.Sprintf("The keypair '%s' already exists.", keyName)))
+				expectedErrorResp := ec2Errors.CreateKeyPair_AlreadyExistsError(keyName)
+				Expect(err).To(MatchErrorResponse(expectedErrorResp))
 			})
 		})
 	})

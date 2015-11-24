@@ -5,8 +5,10 @@ import (
 	"math/rand"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/rosenhouse/tubes/aws_enemy"
+
+	. "github.com/rosenhouse/tubes/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -36,6 +38,7 @@ const templateBody = `{
 var _ = Describe("CloudFormation error cases", func() {
 	var (
 		stackName string
+		cfErrors  aws_enemy.CloudFormation
 	)
 
 	BeforeEach(func() {
@@ -56,10 +59,8 @@ var _ = Describe("CloudFormation error cases", func() {
 					TemplateBody: aws.String(templateBody),
 				})
 				Expect(err).To(HaveOccurred())
-				awsErr := err.(awserr.RequestFailure)
-				Expect(awsErr.Code()).To(Equal("ValidationError"))
-				Expect(awsErr.StatusCode()).To(Equal(400))
-				Expect(awsErr.Message()).To(Equal(fmt.Sprintf("Stack [%s] does not exist", stackName)))
+				expectedErrorResp := cfErrors.UpdateStack_StackMissingError(stackName)
+				Expect(err).To(MatchErrorResponse(expectedErrorResp))
 			})
 		})
 		Context("when the stack exists but there are no changes", func() {
@@ -86,10 +87,8 @@ var _ = Describe("CloudFormation error cases", func() {
 					TemplateBody: aws.String(templateBody),
 				})
 				Expect(err).To(HaveOccurred())
-				awsErr := err.(awserr.RequestFailure)
-				Expect(awsErr.Code()).To(Equal("ValidationError"))
-				Expect(awsErr.Message()).To(Equal("No updates are to be performed."))
-				Expect(awsErr.StatusCode()).To(Equal(400))
+				expectedErrorResp := cfErrors.UpdateStack_NoChangesError()
+				Expect(err).To(MatchErrorResponse(expectedErrorResp))
 			})
 		})
 	})
@@ -108,10 +107,8 @@ var _ = Describe("CloudFormation error cases", func() {
 					TemplateBody: aws.String(templateBody),
 				})
 				Expect(err).To(HaveOccurred())
-				awsErr := err.(awserr.RequestFailure)
-				Expect(awsErr.Code()).To(Equal("AlreadyExistsException"))
-				Expect(awsErr.Message()).To(Equal(fmt.Sprintf("Stack [%s] already exists", stackName)))
-				Expect(awsErr.StatusCode()).To(Equal(400))
+				expectedErrorResp := cfErrors.CreateStack_AlreadyExistsError(stackName)
+				Expect(err).To(MatchErrorResponse(expectedErrorResp))
 			})
 		})
 	})
@@ -123,10 +120,8 @@ var _ = Describe("CloudFormation error cases", func() {
 					StackName: aws.String(stackName),
 				})
 				Expect(err).To(HaveOccurred())
-				awsErr := err.(awserr.RequestFailure)
-				Expect(awsErr.Code()).To(Equal("ValidationError"))
-				Expect(awsErr.Message()).To(Equal(fmt.Sprintf("Stack with id %s does not exist", stackName)))
-				Expect(awsErr.StatusCode()).To(Equal(400))
+				expectedErrorResp := cfErrors.DescribeStacks_StackMissingError(stackName)
+				Expect(err).To(MatchErrorResponse(expectedErrorResp))
 			})
 		})
 	})
@@ -138,10 +133,8 @@ var _ = Describe("CloudFormation error cases", func() {
 					StackName: aws.String(stackName),
 				})
 				Expect(err).To(HaveOccurred())
-				awsErr := err.(awserr.RequestFailure)
-				Expect(awsErr.Code()).To(Equal("ValidationError"))
-				Expect(awsErr.Message()).To(Equal(fmt.Sprintf("Stack with id %s does not exist", stackName)))
-				Expect(awsErr.StatusCode()).To(Equal(400))
+				expectedErrorResp := cfErrors.DescribeStackResources_StackMissingError(stackName)
+				Expect(err).To(MatchErrorResponse(expectedErrorResp))
 			})
 		})
 	})

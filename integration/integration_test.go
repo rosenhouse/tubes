@@ -1,14 +1,11 @@
 package integration_test
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http/httptest"
 	"os/exec"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

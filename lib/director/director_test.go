@@ -3,7 +3,7 @@ package director_test
 import (
 	"io/ioutil"
 
-	"gopkg.in/yaml.v1"
+	"gopkg.in/yaml.v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

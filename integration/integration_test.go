@@ -1,11 +1,14 @@
 package integration_test
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http/httptest"
 	"os/exec"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -46,7 +49,7 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		fakeAWSBackend = integration.NewFakeAWSBackend(GinkgoWriter)
-		fakeAWS = httptest.NewServer(awsfaker.New(awsfaker.Backend{EC2: fakeAWSBackend}))
+		fakeAWS = httptest.NewServer(awsfaker.New(fakeAWSBackend.Backend))
 		envVars = map[string]string{
 			"AWS_DEFAULT_REGION":    "us-west-2",
 			"AWS_ACCESS_KEY_ID":     "some-access-key-id",

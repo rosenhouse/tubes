@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -21,9 +22,10 @@ import (
 
 var _ = Describe("Integration (mocking out AWS)", func() {
 	var (
-		stackName      string
-		envVars        map[string]string
-		workingDir     string
+		stackName  string
+		envVars    map[string]string
+		workingDir string
+
 		fakeAWSBackend *integration.FakeAWSBackend
 		fakeAWS        *httptest.Server
 	)
@@ -50,11 +52,16 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 
 		fakeAWSBackend = integration.NewFakeAWSBackend(GinkgoWriter)
 		fakeAWS = httptest.NewServer(awsfaker.New(fakeAWSBackend.CloudFormation, fakeAWSBackend.EC2))
+		endpointOverrides, _ := json.Marshal(map[string]string{
+			"ec2":            fakeAWS.URL,
+			"cloudformation": fakeAWS.URL,
+		})
+
 		envVars = map[string]string{
 			"AWS_DEFAULT_REGION":    "us-west-2",
 			"AWS_ACCESS_KEY_ID":     "some-access-key-id",
 			"AWS_SECRET_ACCESS_KEY": "some-secret-access-key",
-			"TUBES_AWS_ENDPOINT":    fakeAWS.URL,
+			"TUBES_AWS_ENDPOINTS":   string(endpointOverrides),
 		}
 	})
 

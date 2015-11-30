@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -28,6 +29,15 @@ func (c *CLIOptions) checkStackName() error {
 	return nil
 }
 
+func parseEndpointOverrides(list string) (map[string]string, error) {
+	if list == "" {
+		return nil, nil
+	}
+	var overrides map[string]string
+	err := json.Unmarshal([]byte(list), &overrides)
+	return overrides, err
+}
+
 func (c *AWSConfig) buildClient() (*awsclient.Client, error) {
 	var missing bool
 	load := func(val string) string {
@@ -36,17 +46,23 @@ func (c *AWSConfig) buildClient() (*awsclient.Client, error) {
 		}
 		return val
 	}
+
+	endpointOverrides, err := parseEndpointOverrides(os.Getenv("TUBES_AWS_ENDPOINTS"))
+	if err != nil {
+		return nil, err
+	}
+
 	config := awsclient.Config{
-		Region:           load(c.Region),
-		AccessKey:        load(c.AccessKey),
-		SecretKey:        load(c.SecretKey),
-		EndpointOverride: os.Getenv("TUBES_AWS_ENDPOINT"),
+		Region:            load(c.Region),
+		AccessKey:         load(c.AccessKey),
+		SecretKey:         load(c.SecretKey),
+		EndpointOverrides: endpointOverrides,
 	}
 
 	if missing {
 		return nil, parseError("missing one or more AWS config options/env vars")
 	}
-	return awsclient.New(config), nil
+	return awsclient.New(config)
 }
 
 func (options *CLIOptions) InitApp(args []string) (*application.Application, error) {

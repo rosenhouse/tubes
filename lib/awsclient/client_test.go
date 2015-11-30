@@ -3,6 +3,8 @@ package awsclient_test
 import (
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -13,6 +15,52 @@ var _ = Describe("AWS Client", func() {
 	var (
 		client awsclient.Client
 	)
+	Describe("New()", func() {
+		Context("when configured without endpoint overrides", func() {
+			It("should default to the normal endpoints", func() {
+				client, err := awsclient.New(awsclient.Config{
+					Region: "some-region",
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				ec2Client := client.EC2.(*ec2.EC2)
+				Expect(ec2Client.Config.Endpoint).To(BeNil())
+				cloudformationClient := client.CloudFormation.(*cloudformation.CloudFormation)
+				Expect(cloudformationClient.Config.Endpoint).To(BeNil())
+			})
+		})
+		Context("when configured with endpoint overrides", func() {
+			It("should set all the endpoints", func() {
+				client, err := awsclient.New(awsclient.Config{
+					Region: "some-region",
+					EndpointOverrides: map[string]string{
+						"ec2":            "http://some-fake-ec2-server.example.com:1234",
+						"cloudformation": "http://some-fake-cloudformation-server.example.com:1234",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				ec2Client := client.EC2.(*ec2.EC2)
+				Expect(*ec2Client.Config.Endpoint).To(Equal("http://some-fake-ec2-server.example.com:1234"))
+				cloudformationClient := client.CloudFormation.(*cloudformation.CloudFormation)
+				Expect(*cloudformationClient.Config.Endpoint).To(Equal("http://some-fake-cloudformation-server.example.com:1234"))
+			})
+			Context("when some endpoints are missing", func() {
+				It("should return an error", func() {
+					client, err := awsclient.New(awsclient.Config{
+						Region: "some-region",
+						EndpointOverrides: map[string]string{
+							"ec2":            "http://some-fake-ec2-server.example.com:1234",
+							"cloudformation": "",
+						},
+					})
+					Expect(client).To(BeNil())
+					Expect(err).To(MatchError(`EndpointOverrides set, but missing required service "cloudformation"`))
+				})
+			})
+		})
+
+	})
 
 	Describe("ParseARN", func() {
 		It("should parse basic ARNs", func() {

@@ -16,8 +16,19 @@ type Config struct {
 	Region                    string
 	AccessKey                 string
 	SecretKey                 string
-	EndpointOverride          string
 	CloudFormationWaitTimeout time.Duration
+	EndpointOverrides         map[string]string
+}
+
+func (c *Config) getEndpoint(serviceName string) (*aws.Config, error) {
+	if c.EndpointOverrides == nil {
+		return &aws.Config{}, nil
+	}
+	endpointOverride, ok := c.EndpointOverrides[serviceName]
+	if !ok || endpointOverride == "" {
+		return nil, fmt.Errorf("EndpointOverrides set, but missing required service %q", serviceName)
+	}
+	return &aws.Config{Endpoint: aws.String(endpointOverride)}, nil
 }
 
 type ec2Client interface {
@@ -46,25 +57,33 @@ type Client struct {
 	CloudFormationWaitTimeout time.Duration
 }
 
-func New(c Config) *Client {
-	credentials := credentials.NewStaticCredentials(c.AccessKey, c.SecretKey, "")
+func New(config Config) (*Client, error) {
+	credentials := credentials.NewStaticCredentials(config.AccessKey, config.SecretKey, "")
 	sdkConfig := &aws.Config{
 		Credentials: credentials,
-		Region:      aws.String(c.Region),
-		Endpoint:    aws.String(c.EndpointOverride),
+		Region:      aws.String(config.Region),
 	}
 
 	session := session.New(sdkConfig)
 
-	if c.CloudFormationWaitTimeout == 0 {
-		c.CloudFormationWaitTimeout = 5 * time.Minute
+	if config.CloudFormationWaitTimeout == 0 {
+		config.CloudFormationWaitTimeout = 5 * time.Minute
 	}
+	ec2EndpointConfig, err := config.getEndpoint("ec2")
+	if err != nil {
+		return nil, err
+	}
+	cloudformationEndpointConfig, err := config.getEndpoint("cloudformation")
+	if err != nil {
+		return nil, err
+	}
+
 	return &Client{
-		EC2:            ec2.New(session),
-		CloudFormation: cloudformation.New(session),
+		EC2:            ec2.New(session, ec2EndpointConfig),
+		CloudFormation: cloudformation.New(session, cloudformationEndpointConfig),
 		Clock:          clockImpl{},
-		CloudFormationWaitTimeout: c.CloudFormationWaitTimeout,
-	}
+		CloudFormationWaitTimeout: config.CloudFormationWaitTimeout,
+	}, nil
 }
 
 type clockImpl struct{}

@@ -9,21 +9,19 @@ import (
 	"github.com/rosenhouse/tubes/aws_enemy"
 )
 
-type fakeCloudFormation struct {
-	*FakeAWSBackend
+type FakeCloudFormation struct {
+	*AWSCallLogger
 
 	Stacks []*cloudformation.Stack
 }
 
-func newFakeCloudFormation(parent *FakeAWSBackend) *fakeCloudFormation {
-	b := &fakeCloudFormation{
-		FakeAWSBackend: parent,
+func NewFakeCloudFormation(logger *AWSCallLogger) *FakeCloudFormation {
+	return &FakeCloudFormation{
+		AWSCallLogger: logger,
 	}
-
-	return b
 }
 
-func (f *fakeCloudFormation) findStack(nameOrID string) *cloudformation.Stack {
+func (f *FakeCloudFormation) findStack(nameOrID string) *cloudformation.Stack {
 	for _, v := range f.Stacks {
 		if nameOrID == *v.StackName || nameOrID == *v.StackId {
 			return v
@@ -32,7 +30,7 @@ func (f *fakeCloudFormation) findStack(nameOrID string) *cloudformation.Stack {
 	return nil
 }
 
-func (f *fakeCloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInput) (*cloudformation.DescribeStacksOutput, error) {
+func (f *FakeCloudFormation) DescribeStacks(input *cloudformation.DescribeStacksInput) (*cloudformation.DescribeStacksOutput, error) {
 	f.logCall(input)
 
 	stackName := aws.StringValue(input.StackName)
@@ -50,7 +48,7 @@ func (f *fakeCloudFormation) DescribeStacks(input *cloudformation.DescribeStacks
 	return nil, aws_enemy.CloudFormation{}.DescribeStackResources_StackMissingError(stackName)
 }
 
-func (f *fakeCloudFormation) CreateStack(input *cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error) {
+func (f *FakeCloudFormation) CreateStack(input *cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error) {
 	f.logCall(input)
 
 	stackName := aws.StringValue(input.StackName)
@@ -72,7 +70,7 @@ func (f *fakeCloudFormation) CreateStack(input *cloudformation.CreateStackInput)
 	}, nil
 }
 
-func (f *fakeCloudFormation) DeleteStack(input *cloudformation.DeleteStackInput) (*cloudformation.DeleteStackOutput, error) {
+func (f *FakeCloudFormation) DeleteStack(input *cloudformation.DeleteStackInput) (*cloudformation.DeleteStackOutput, error) {
 	f.logCall(input)
 
 	stackName := aws.StringValue(input.StackName)
@@ -84,7 +82,7 @@ func (f *fakeCloudFormation) DeleteStack(input *cloudformation.DeleteStackInput)
 	return &cloudformation.DeleteStackOutput{}, nil
 }
 
-func (f *fakeCloudFormation) DescribeStackResources(input *cloudformation.DescribeStackResourcesInput) (*cloudformation.DescribeStackResourcesOutput, error) {
+func (f *FakeCloudFormation) DescribeStackResources(input *cloudformation.DescribeStackResourcesInput) (*cloudformation.DescribeStackResourcesOutput, error) {
 	f.logCall(input)
 
 	stackName := aws.StringValue(input.StackName)

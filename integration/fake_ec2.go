@@ -12,36 +12,34 @@ import (
 	"github.com/rosenhouse/tubes/aws_enemy"
 )
 
-type fakeEC2 struct {
-	*FakeAWSBackend
+type FakeEC2 struct {
+	*AWSCallLogger
 
 	KeyPairs map[string]string
 	Images   []*ec2.Image
 }
 
-func newFakeEC2(parent *FakeAWSBackend) *fakeEC2 {
-	b := &fakeEC2{
-		FakeAWSBackend: parent,
-	}
+func NewFakeEC2(logger *AWSCallLogger) *FakeEC2 {
+	return &FakeEC2{
+		AWSCallLogger: logger,
 
-	b.KeyPairs = map[string]string{}
+		KeyPairs: map[string]string{},
 
-	b.Images = []*ec2.Image{
-		&ec2.Image{
-			Architecture: aws.String("x86_64"),
-			BlockDeviceMappings: []*ec2.BlockDeviceMapping{
-				&ec2.BlockDeviceMapping{
-					Ebs: &ec2.EbsBlockDevice{
-						VolumeType: aws.String("standard"),
+		Images: []*ec2.Image{
+			&ec2.Image{
+				Architecture: aws.String("x86_64"),
+				BlockDeviceMappings: []*ec2.BlockDeviceMapping{
+					&ec2.BlockDeviceMapping{
+						Ebs: &ec2.EbsBlockDevice{
+							VolumeType: aws.String("standard"),
+						},
 					},
 				},
+				CreationDate: aws.String("2013-10-10T22:35:35.000Z"),
+				ImageId:      aws.String("ami-whatever"),
 			},
-			CreationDate: aws.String("2013-10-10T22:35:35.000Z"),
-			ImageId:      aws.String("ami-whatever"),
 		},
 	}
-
-	return b
 }
 
 // generate returns a new 1024-bit RSA private key, PEM-encoded
@@ -59,7 +57,7 @@ func generate() (string, error) {
 	return string(pem.EncodeToMemory(block)), nil
 }
 
-func (f *fakeEC2) CreateKeyPair(input *ec2.CreateKeyPairInput) (*ec2.CreateKeyPairOutput, error) {
+func (f *FakeEC2) CreateKeyPair(input *ec2.CreateKeyPairInput) (*ec2.CreateKeyPairOutput, error) {
 	f.logCall(input)
 
 	keyName := *input.KeyName
@@ -83,18 +81,18 @@ func (f *fakeEC2) CreateKeyPair(input *ec2.CreateKeyPairInput) (*ec2.CreateKeyPa
 	}, nil
 }
 
-func (f *fakeEC2) DeleteKeyPair(input *ec2.DeleteKeyPairInput) (*ec2.DeleteKeyPairOutput, error) {
+func (f *FakeEC2) DeleteKeyPair(input *ec2.DeleteKeyPairInput) (*ec2.DeleteKeyPairOutput, error) {
 	return &ec2.DeleteKeyPairOutput{}, nil
 }
 
-func (f *fakeEC2) DescribeImages(input *ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error) {
+func (f *FakeEC2) DescribeImages(input *ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error) {
 	f.logCall(input)
 	return &ec2.DescribeImagesOutput{
 		Images: f.Images,
 	}, nil
 }
 
-func (f *fakeEC2) DescribeSubnets(input *ec2.DescribeSubnetsInput) (*ec2.DescribeSubnetsOutput, error) {
+func (f *FakeEC2) DescribeSubnets(input *ec2.DescribeSubnetsInput) (*ec2.DescribeSubnetsOutput, error) {
 	f.logCall(input)
 
 	return &ec2.DescribeSubnetsOutput{

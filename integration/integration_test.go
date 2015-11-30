@@ -26,9 +26,11 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		envVars    map[string]string
 		workingDir string
 
-		fakeCloudFormation *integration.FakeCloudFormation
-		fakeEC2            *integration.FakeEC2
-		fakeAWSServer      *httptest.Server
+		fakeCloudFormation       *integration.FakeCloudFormation
+		fakeCloudFormationServer *httptest.Server
+
+		fakeEC2       *integration.FakeEC2
+		fakeEC2Server *httptest.Server
 	)
 
 	var start = func(envVars map[string]string, args ...string) *gexec.Session {
@@ -53,11 +55,12 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 
 		logger := integration.NewAWSCallLogger(GinkgoWriter)
 		fakeCloudFormation = integration.NewFakeCloudFormation(logger)
+		fakeCloudFormationServer = httptest.NewServer(awsfaker.New(fakeCloudFormation))
 		fakeEC2 = integration.NewFakeEC2(logger)
-		fakeAWSServer = httptest.NewServer(awsfaker.New(fakeCloudFormation, fakeEC2))
+		fakeEC2Server = httptest.NewServer(awsfaker.New(fakeEC2))
 		endpointOverrides, _ := json.Marshal(map[string]string{
-			"ec2":            fakeAWSServer.URL,
-			"cloudformation": fakeAWSServer.URL,
+			"ec2":            fakeEC2Server.URL,
+			"cloudformation": fakeCloudFormationServer.URL,
 		})
 
 		envVars = map[string]string{
@@ -69,8 +72,11 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 	})
 
 	AfterEach(func() {
-		if fakeAWSServer != nil {
-			fakeAWSServer.Close()
+		if fakeEC2Server != nil {
+			fakeEC2Server.Close()
+		}
+		if fakeCloudFormationServer != nil {
+			fakeCloudFormationServer.Close()
 		}
 	})
 

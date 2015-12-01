@@ -57,7 +57,12 @@ func (a *Application) Boot(stackName string) error {
 	}
 	a.Logger.Println("Generating BOSH init manifest")
 
-	manifestYAML, err := a.ManifestBuilder.Build(stackName, baseStackResources)
+	accessKey, secretKey, err := a.AWSClient.CreateAccessKey(baseStackResources.BOSHUser)
+	if err != nil {
+		return err
+	}
+
+	manifestYAML, err := a.ManifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 	if err != nil {
 		return err
 	}

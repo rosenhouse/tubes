@@ -51,11 +51,12 @@ var _ = Describe("The CLI", func() {
 		})
 		AfterEach(func() {
 			fmt.Fprintf(GinkgoWriter, "\n\n  -->  Cleaning up.  You may not want this if you're debugging a test failure.\n\n")
-			client := awsclient.New(awsclient.Config{
+			client, err := awsclient.New(awsclient.Config{
 				Region:    envVars["AWS_DEFAULT_REGION"],
 				AccessKey: envVars["AWS_ACCESS_KEY_ID"],
 				SecretKey: envVars["AWS_SECRET_ACCESS_KEY"],
 			})
+			Expect(err).NotTo(HaveOccurred())
 			Expect(client.DeleteStack(stackName)).To(Succeed())
 			Expect(client.DeleteKeyPair(stackName)).To(Succeed())
 		})

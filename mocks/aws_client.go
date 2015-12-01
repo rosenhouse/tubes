@@ -62,6 +62,35 @@ type AWSClient struct {
 			Error     error
 		}
 	}
+
+	CreateAccessKeyCall struct {
+		Receives struct {
+			UserName string
+		}
+		Returns struct {
+			AccessKey string
+			SecretKey string
+			Error     error
+		}
+	}
+	DeleteAccessKeyCall struct {
+		Receives struct {
+			UserName  string
+			AccessKey string
+		}
+		Returns struct {
+			Error error
+		}
+	}
+	ListAccessKeysCall struct {
+		Receives struct {
+			UserName string
+		}
+		Returns struct {
+			AccessKeys []string
+			Error      error
+		}
+	}
 }
 
 func (c *AWSClient) GetLatestNATBoxAMIID() (string, error) {
@@ -99,4 +128,20 @@ func (c *AWSClient) DeleteKeyPair(stackName string) error {
 func (c *AWSClient) GetBaseStackResources(stackName string) (awsclient.BaseStackResources, error) {
 	c.GetBaseStackResourcesCall.Receives.StackName = stackName
 	return c.GetBaseStackResourcesCall.Returns.Resources, c.GetBaseStackResourcesCall.Returns.Error
+}
+
+func (c *AWSClient) CreateAccessKey(userName string) (string, string, error) {
+	c.CreateAccessKeyCall.Receives.UserName = userName
+	return c.CreateAccessKeyCall.Returns.AccessKey, c.CreateAccessKeyCall.Returns.SecretKey, c.CreateAccessKeyCall.Returns.Error
+}
+
+func (c *AWSClient) DeleteAccessKey(userName, accessKeyID string) error {
+	c.DeleteAccessKeyCall.Receives.UserName = userName
+	c.DeleteAccessKeyCall.Receives.AccessKey = accessKeyID
+	return c.DeleteAccessKeyCall.Returns.Error
+}
+
+func (c *AWSClient) ListAccessKeys(userName string) ([]string, error) {
+	c.ListAccessKeysCall.Receives.UserName = userName
+	return c.ListAccessKeysCall.Returns.AccessKeys, c.ListAccessKeysCall.Returns.Error
 }

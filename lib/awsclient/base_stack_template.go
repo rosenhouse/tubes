@@ -5,16 +5,6 @@ import . "github.com/awslabs/aws-cfn-go-template"
 var BaseStackTemplate = Template{
 	AWSTemplateFormatVersion: "2010-09-09",
 	Description:              "Infrastructure required to bootstrap a BOSH director",
-	Outputs: map[string]Output{
-		"BOSHDirectorUserAccessKey": {
-			Description: "BOSH Director User Access Key ID",
-			Value:       Ref("BOSHDirectorCredentials"),
-		},
-		"BOSHDirectorUserSecretKey": {
-			Description: "BOSH Director User Secret Access Key",
-			Value:       FnGetAtt("BOSHDirectorCredentials", "SecretAccessKey"),
-		},
-	},
 	Parameters: map[string]Parameter{
 		"KeyName": Parameter{
 			Type:        "AWS::EC2::KeyPair::KeyName",
@@ -55,12 +45,6 @@ var BaseStackTemplate = Template{
 			Type: "AWS::IAM::User",
 			Properties: map[string]interface{}{
 				"ManagedPolicyArns": []string{"arn:aws:iam::aws:policy/AdministratorAccess"},
-			},
-		},
-		"BOSHDirectorCredentials": {
-			Type: "AWS::IAM::AccessKey",
-			Properties: map[string]interface{}{
-				"UserName": Ref("BOSHDirectorUser"),
 			},
 		},
 		"NATSecurityGroup": {

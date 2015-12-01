@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/iam"
 )
 
 type Config struct {
@@ -46,6 +47,13 @@ type cloudformationClient interface {
 	DeleteStack(*cloudformation.DeleteStackInput) (*cloudformation.DeleteStackOutput, error)
 }
 
+type iamClient interface {
+	DeleteUser(*iam.DeleteUserInput) (*iam.DeleteUserOutput, error)
+	CreateAccessKey(*iam.CreateAccessKeyInput) (*iam.CreateAccessKeyOutput, error)
+	DeleteAccessKey(*iam.DeleteAccessKeyInput) (*iam.DeleteAccessKeyOutput, error)
+	ListAccessKeys(*iam.ListAccessKeysInput) (*iam.ListAccessKeysOutput, error)
+}
+
 type clock interface {
 	Sleep(time.Duration)
 }
@@ -53,6 +61,7 @@ type clock interface {
 type Client struct {
 	EC2                       ec2Client
 	CloudFormation            cloudformationClient
+	IAM                       iamClient
 	Clock                     clock
 	CloudFormationWaitTimeout time.Duration
 }
@@ -77,10 +86,15 @@ func New(config Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	iamEndpointConfig, err := config.getEndpoint("iam")
+	if err != nil {
+		return nil, err
+	}
 
 	return &Client{
 		EC2:            ec2.New(session, ec2EndpointConfig),
 		CloudFormation: cloudformation.New(session, cloudformationEndpointConfig),
+		IAM:            iam.New(session, iamEndpointConfig),
 		Clock:          clockImpl{},
 		CloudFormationWaitTimeout: config.CloudFormationWaitTimeout,
 	}, nil

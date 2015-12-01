@@ -1,6 +1,7 @@
 package application
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/rosenhouse/tubes/lib/awsclient"
@@ -65,7 +66,14 @@ func (b *ManifestBuilder) getAWSNetwork(resources awsclient.BaseStackResources) 
 	}
 }
 
-func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackResources) ([]byte, error) {
+func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackResources, accessKey, secretKey string) ([]byte, error) {
+	if accessKey == "" {
+		return nil, fmt.Errorf("missing access key")
+	}
+	if secretKey == "" {
+		return nil, fmt.Errorf("missing secret key")
+	}
+
 	config := director.DirectorConfig{}
 
 	var err error
@@ -81,7 +89,7 @@ func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackR
 
 	config.InternalIP, err = b.getInternalIP(resources.BOSHSubnetCIDR)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	config.AWSNetwork = b.getAWSNetwork(resources)
@@ -89,8 +97,8 @@ func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackR
 	config.AWSSSHKey.Path = "./ssh-key"
 	config.AWSCredentials = director.AWSCredentials{
 		Region:          resources.AWSRegion,
-		AccessKeyID:     resources.BOSHAccessKey,
-		SecretAccessKey: resources.BOSHSecretKey,
+		AccessKeyID:     accessKey,
+		SecretAccessKey: secretKey,
 	}
 
 	manifest, err := b.DirectorManifestGenerator.Generate(config)

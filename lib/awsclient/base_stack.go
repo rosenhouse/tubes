@@ -15,8 +15,7 @@ type BaseStackResources struct {
 	BOSHElasticIP     string
 	BOSHSecurityGroup string
 	AccountID         string
-	BOSHAccessKey     string
-	BOSHSecretKey     string
+	BOSHUser          string
 	AWSRegion         string
 }
 
@@ -53,6 +52,10 @@ func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, er
 	if !ok {
 		return resources, errors.New("missing stack resource MicroEIP")
 	}
+	resources.BOSHUser, ok = mapping["BOSHDirectorUser"]
+	if !ok {
+		return resources, errors.New("missing stack resource BOSHDirectorUser")
+	}
 
 	dsOutput, err := c.EC2.DescribeSubnets(&ec2.DescribeSubnetsInput{
 		SubnetIds: []*string{aws.String(resources.BOSHSubnetID)},
@@ -63,21 +66,6 @@ func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, er
 	subnet := *dsOutput.Subnets[0]
 	resources.AvailabilityZone = *subnet.AvailabilityZone
 	resources.BOSHSubnetCIDR = *subnet.CidrBlock
-
-	output2, err := c.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
-	})
-	if err != nil {
-		return BaseStackResources{}, err
-	}
-	for _, stackOutput := range output2.Stacks[0].Outputs {
-		switch *stackOutput.OutputKey {
-		case "BOSHDirectorUserAccessKey":
-			resources.BOSHAccessKey = *stackOutput.OutputValue
-		case "BOSHDirectorUserSecretKey":
-			resources.BOSHSecretKey = *stackOutput.OutputValue
-		}
-	}
 
 	return resources, nil
 }

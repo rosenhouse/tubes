@@ -5,6 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/iam"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -30,13 +32,20 @@ var _ = Describe("AWS Client", func() {
 			})
 		})
 		Context("when configured with endpoint overrides", func() {
+			var endpointOverrides map[string]string
+
+			BeforeEach(func() {
+				endpointOverrides = map[string]string{
+					"ec2":            "http://some-fake-ec2-server.example.com:1234",
+					"cloudformation": "http://some-fake-cloudformation-server.example.com:1234",
+					"iam":            "http://some-fake-iam-server.example.com:1234",
+				}
+			})
+
 			It("should set all the endpoints", func() {
 				client, err := awsclient.New(awsclient.Config{
-					Region: "some-region",
-					EndpointOverrides: map[string]string{
-						"ec2":            "http://some-fake-ec2-server.example.com:1234",
-						"cloudformation": "http://some-fake-cloudformation-server.example.com:1234",
-					},
+					Region:            "some-region",
+					EndpointOverrides: endpointOverrides,
 				})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -44,15 +53,15 @@ var _ = Describe("AWS Client", func() {
 				Expect(*ec2Client.Config.Endpoint).To(Equal("http://some-fake-ec2-server.example.com:1234"))
 				cloudformationClient := client.CloudFormation.(*cloudformation.CloudFormation)
 				Expect(*cloudformationClient.Config.Endpoint).To(Equal("http://some-fake-cloudformation-server.example.com:1234"))
+				iamClient := client.IAM.(*iam.IAM)
+				Expect(*iamClient.Config.Endpoint).To(Equal("http://some-fake-iam-server.example.com:1234"))
 			})
 			Context("when some endpoints are missing", func() {
 				It("should return an error", func() {
+					endpointOverrides["cloudformation"] = ""
 					client, err := awsclient.New(awsclient.Config{
-						Region: "some-region",
-						EndpointOverrides: map[string]string{
-							"ec2":            "http://some-fake-ec2-server.example.com:1234",
-							"cloudformation": "",
-						},
+						Region:            "some-region",
+						EndpointOverrides: endpointOverrides,
 					})
 					Expect(client).To(BeNil())
 					Expect(err).To(MatchError(`EndpointOverrides set, but missing required service "cloudformation"`))

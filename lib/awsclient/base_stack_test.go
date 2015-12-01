@@ -52,13 +52,6 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 		}
 	}
 
-	var newOutput = func(key, value string) *cloudformation.Output {
-		return &cloudformation.Output{
-			OutputKey:   aws.String(key),
-			OutputValue: aws.String(value),
-		}
-	}
-
 	BeforeEach(func() {
 		cloudFormationClient = &mocks.CloudFormationClient{}
 		ec2Client = &mocks.EC2Client{}
@@ -75,17 +68,7 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 				newResource("NATEIP", "nat-eip-ignore-this"),
 				newResource("NATSecurityGroup", "nat-security-group-ignore-this"),
 				newResource("PrivateSubnet", "private-subnet-ignore-this-for-now"),
-			},
-		}
-
-		cloudFormationClient.DescribeStacksCall.Returns.Output = &cloudformation.DescribeStacksOutput{
-			Stacks: []*cloudformation.Stack{
-				&cloudformation.Stack{
-					Outputs: []*cloudformation.Output{
-						newOutput("BOSHDirectorUserAccessKey", "some-access-key-id"),
-						newOutput("BOSHDirectorUserSecretKey", "some-secret-access-key"),
-					},
-				},
+				newResource("BOSHDirectorUser", "some-iam-user"),
 			},
 		}
 
@@ -110,8 +93,7 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 			BOSHElasticIP:     "54.123.456.78",
 			BOSHSecurityGroup: "sg-12345",
 			AccountID:         "123456789012",
-			BOSHAccessKey:     "some-access-key-id",
-			BOSHSecretKey:     "some-secret-access-key",
+			BOSHUser:          "some-iam-user",
 			AWSRegion:         "some-region",
 		}))
 	})
@@ -121,7 +103,6 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cloudFormationClient.DescribeStackResourcesCall.Receives.Input.StackName).To(Equal(aws.String("some-stack-name")))
-		Expect(cloudFormationClient.DescribeStacksCall.Receives.Input.StackName).To(Equal(aws.String("some-stack-name")))
 	})
 
 	It("should use the BOSH subnet ID from the stack to lookup details via EC2 API", func() {
@@ -158,13 +139,6 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 				cloudFormationClient.DescribeStackResourcesCall.Returns.Output.StackResources[3].StackId = aws.String("invalid-stackid")
 				_, err := client.GetBaseStackResources("some-stack-name")
 				Expect(err).To(MatchError(`malformed ARN "invalid-stackid"`))
-			})
-		})
-		Context("when describing the stack errors", func() {
-			It("should return the error", func() {
-				cloudFormationClient.DescribeStacksCall.Returns.Error = errors.New("some error")
-				_, err := client.GetBaseStackResources("some-stack-name")
-				Expect(err).To(MatchError("some error"))
 			})
 		})
 	})

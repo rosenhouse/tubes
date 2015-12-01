@@ -14,6 +14,13 @@ import (
 var _ = Describe("Up", func() {
 	BeforeEach(func() {
 		awsClient.GetLatestNATBoxAMIIDCall.Returns.AMIID = "some-nat-box-ami-id"
+		awsClient.GetBaseStackResourcesCall.Returns.Resources =
+			awsclient.BaseStackResources{
+				AccountID: "ping pong",
+				BOSHUser:  "some-bosh-user",
+			}
+		awsClient.CreateAccessKeyCall.Returns.AccessKey = "some-access-key"
+		awsClient.CreateAccessKeyCall.Returns.SecretKey = "some-secret-key"
 	})
 
 	It("should boot the base stack using the latest NAT ID", func() {
@@ -61,15 +68,19 @@ var _ = Describe("Up", func() {
 		Expect(awsClient.GetBaseStackResourcesCall.Receives.StackName).To(Equal(stackName))
 	})
 
+	It("should create an access key for the BOSH user", func() {
+		Expect(app.Boot(stackName)).To(Succeed())
+		Expect(awsClient.CreateAccessKeyCall.Receives.UserName).To(Equal("some-bosh-user"))
+	})
+
 	It("should provide the stack resources to the manifest builder", func() {
-		resources := awsclient.BaseStackResources{
-			AccountID: "ping pong",
-		}
-		awsClient.GetBaseStackResourcesCall.Returns.Resources = resources
 		Expect(app.Boot(stackName)).To(Succeed())
 
 		Expect(manifestBuilder.BuildCall.Receives.StackName).To(Equal(stackName))
-		Expect(manifestBuilder.BuildCall.Receives.Resources).To(Equal(resources))
+		Expect(manifestBuilder.BuildCall.Receives.Resources.AccountID).To(Equal("ping pong"))
+		Expect(manifestBuilder.BuildCall.Receives.Resources.BOSHUser).To(Equal("some-bosh-user"))
+		Expect(manifestBuilder.BuildCall.Receives.AccessKey).To(Equal("some-access-key"))
+		Expect(manifestBuilder.BuildCall.Receives.SecretKey).To(Equal("some-secret-key"))
 	})
 
 	It("should store the manifest", func() {
@@ -146,6 +157,14 @@ var _ = Describe("Up", func() {
 	Context("when getting the base stack resources fails", func() {
 		It("should return the error", func() {
 			awsClient.GetBaseStackResourcesCall.Returns.Error = errors.New("boom")
+
+			Expect(app.Boot(stackName)).To(MatchError("boom"))
+		})
+	})
+
+	Context("when creating an access key fails", func() {
+		It("should return the error", func() {
+			awsClient.CreateAccessKeyCall.Returns.Error = errors.New("boom")
 
 			Expect(app.Boot(stackName)).To(MatchError("boom"))
 		})

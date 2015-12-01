@@ -31,6 +31,9 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 
 		fakeEC2       *integration.FakeEC2
 		fakeEC2Server *httptest.Server
+
+		fakeIAM       *integration.FakeIAM
+		fakeIAMServer *httptest.Server
 	)
 
 	var start = func(envVars map[string]string, args ...string) *gexec.Session {
@@ -58,9 +61,12 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		fakeCloudFormationServer = httptest.NewServer(awsfaker.New(fakeCloudFormation))
 		fakeEC2 = integration.NewFakeEC2(logger)
 		fakeEC2Server = httptest.NewServer(awsfaker.New(fakeEC2))
+		fakeIAM = integration.NewFakeIAM(logger)
+		fakeIAMServer = httptest.NewServer(awsfaker.New(fakeIAM))
 		endpointOverrides, _ := json.Marshal(map[string]string{
 			"ec2":            fakeEC2Server.URL,
 			"cloudformation": fakeCloudFormationServer.URL,
+			"iam":            fakeIAMServer.URL,
 		})
 
 		envVars = map[string]string{

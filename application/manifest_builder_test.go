@@ -20,6 +20,7 @@ var _ = Describe("ManifestBuilder", func() {
 		credentialsGenerator      *mocks.CredentialsGenerator
 		baseStackResources        awsclient.BaseStackResources
 		stackName                 string
+		accessKey, secretKey      string
 
 		manifestBuilder *application.ManifestBuilder
 	)
@@ -36,10 +37,10 @@ var _ = Describe("ManifestBuilder", func() {
 			BOSHElasticIP:     "some-elastic-ip",
 			BOSHSecurityGroup: "some-security-group",
 			AWSRegion:         "some-region",
-			BOSHAccessKey:     "some-access-key",
-			BOSHSecretKey:     "some-secret-key",
 		}
 		stackName = fmt.Sprintf("some-stack-name-%x", rand.Int31())
+		accessKey = fmt.Sprintf("some-access-key-%x", rand.Int31())
+		secretKey = fmt.Sprintf("some-secret-key-%x", rand.Int31())
 
 		manifestBuilder = &application.ManifestBuilder{
 			DirectorManifestGenerator: directorManifestGenerator,
@@ -63,7 +64,7 @@ var _ = Describe("ManifestBuilder", func() {
 
 	Describe("configuring the software artifacts", func() {
 		It("should discover the latest software", func() {
-			_, err := manifestBuilder.Build(stackName, baseStackResources)
+			_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(boshioClient.LatestStemcellCall.Receives.StemcellName).To(Equal("bosh-aws-xen-hvm-ubuntu-trusty-go_agent"))
@@ -72,7 +73,7 @@ var _ = Describe("ManifestBuilder", func() {
 		})
 
 		It("should pass the resulting software config to the director manifest generator", func() {
-			_, err := manifestBuilder.Build(stackName, baseStackResources)
+			_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 			Expect(err).NotTo(HaveOccurred())
 
 			software := directorManifestGenerator.GenerateCall.Receives.Config.Software
@@ -93,17 +94,17 @@ var _ = Describe("ManifestBuilder", func() {
 		Context("when the boshio client errors", func() {
 			It("should return stemcell errors", func() {
 				boshioClient.LatestStemcellCall.Returns.Error = errors.New("some error")
-				_, err := manifestBuilder.Build(stackName, baseStackResources)
+				_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 				Expect(err).To(MatchError("some error"))
 			})
 			It("should return aws cpi release errors", func() {
 				boshioClient.LatestReleaseCalls[0].Returns.Error = errors.New("some error")
-				_, err := manifestBuilder.Build(stackName, baseStackResources)
+				_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 				Expect(err).To(MatchError("some error"))
 			})
 			It("should return bosh director release errors", func() {
 				boshioClient.LatestReleaseCalls[1].Returns.Error = errors.New("some error")
-				_, err := manifestBuilder.Build(stackName, baseStackResources)
+				_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 				Expect(err).To(MatchError("some error"))
 			})
 		})
@@ -111,7 +112,7 @@ var _ = Describe("ManifestBuilder", func() {
 
 	Describe("configuring bosh director credentials", func() {
 		It("should generate new credentials", func() {
-			_, err := manifestBuilder.Build(stackName, baseStackResources)
+			_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 
 			Expect(err).NotTo(HaveOccurred())
 			credentials := directorManifestGenerator.GenerateCall.Receives.Config.Credentials
@@ -123,7 +124,7 @@ var _ = Describe("ManifestBuilder", func() {
 				credentialsGenerator.FillCallback = func(toFill interface{}) error {
 					return errors.New("filler error (ha ha)")
 				}
-				_, err := manifestBuilder.Build(stackName, baseStackResources)
+				_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 				Expect(err).To(MatchError("filler error (ha ha)"))
 			})
 		})
@@ -131,7 +132,7 @@ var _ = Describe("ManifestBuilder", func() {
 
 	Describe("configuring IPs and IDs", func() {
 		It("should set the internal IP of the director to the CIDR base address + 6", func() {
-			_, err := manifestBuilder.Build(stackName, baseStackResources)
+			_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 			Expect(err).NotTo(HaveOccurred())
 
 			internalIP := directorManifestGenerator.GenerateCall.Receives.Config.InternalIP
@@ -139,14 +140,14 @@ var _ = Describe("ManifestBuilder", func() {
 		})
 		It("should work even with weird subnet sizes", func() {
 			baseStackResources.BOSHSubnetCIDR = "10.0.0.128/25"
-			_, err := manifestBuilder.Build(stackName, baseStackResources)
+			_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 			Expect(err).NotTo(HaveOccurred())
 
 			internalIP := directorManifestGenerator.GenerateCall.Receives.Config.InternalIP
 			Expect(internalIP).To(Equal("10.0.0.134"))
 		})
 		It("should set the network config for AWS", func() {
-			_, err := manifestBuilder.Build(stackName, baseStackResources)
+			_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 			Expect(err).NotTo(HaveOccurred())
 
 			awsConfig := directorManifestGenerator.GenerateCall.Receives.Config.AWSNetwork
@@ -156,11 +157,19 @@ var _ = Describe("ManifestBuilder", func() {
 			Expect(awsConfig.ElasticIP).To(Equal("some-elastic-ip"))
 			Expect(awsConfig.SecurityGroup).To(Equal("some-security-group"))
 		})
+
+		Context("when the subnet CIDR is malformed", func() {
+			It("should reeturn the error", func() {
+				baseStackResources.BOSHSubnetCIDR = "invalid-cidr"
+				_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
+				Expect(err).To(MatchError("invalid CIDR address: invalid-cidr"))
+			})
+		})
 	})
 
 	Describe("configuring aws credentials", func() {
 		It("should assume the ssh key name and path based on the stack name", func() {
-			_, err := manifestBuilder.Build(stackName, baseStackResources)
+			_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 			Expect(err).NotTo(HaveOccurred())
 
 			awsSSHKey := directorManifestGenerator.GenerateCall.Receives.Config.AWSSSHKey
@@ -168,22 +177,32 @@ var _ = Describe("ManifestBuilder", func() {
 			Expect(awsSSHKey.Path).To(Equal("./ssh-key"))
 		})
 		It("should set the region, access key and secret key", func() {
-			_, err := manifestBuilder.Build(stackName, baseStackResources)
+			_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 			Expect(err).NotTo(HaveOccurred())
 
 			awsCredentials := directorManifestGenerator.GenerateCall.Receives.Config.AWSCredentials
 			Expect(awsCredentials).To(Equal(director.AWSCredentials{
 				Region:          "some-region",
-				AccessKeyID:     "some-access-key",
-				SecretAccessKey: "some-secret-key",
+				AccessKeyID:     accessKey,
+				SecretAccessKey: secretKey,
 			}))
+		})
+
+		Context("when the access key or secret key are empty", func() {
+			It("should error", func() {
+				_, err := manifestBuilder.Build(stackName, baseStackResources, "", secretKey)
+				Expect(err).To(MatchError("missing access key"))
+
+				_, err = manifestBuilder.Build(stackName, baseStackResources, accessKey, "")
+				Expect(err).To(MatchError("missing secret key"))
+			})
 		})
 	})
 
 	Describe("assembling the config into YAML", func() {
 		It("should return the generated manifest as YAML bytes", func() {
 			directorManifestGenerator.GenerateCall.Returns.Manifest.Name = "some-deployment-name"
-			yamlBytes, err := manifestBuilder.Build(stackName, baseStackResources)
+			yamlBytes, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(yamlBytes).To(ContainSubstring("name: some-deployment-name"))
 		})
@@ -191,7 +210,7 @@ var _ = Describe("ManifestBuilder", func() {
 		Context("when generating the manifest errors", func() {
 			It("should return the error", func() {
 				directorManifestGenerator.GenerateCall.Returns.Error = errors.New("missing subnet")
-				_, err := manifestBuilder.Build(stackName, baseStackResources)
+				_, err := manifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 				Expect(err).To(MatchError("missing subnet"))
 			})
 		})

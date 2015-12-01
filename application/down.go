@@ -3,8 +3,28 @@ package application
 import "github.com/rosenhouse/tubes/lib/awsclient"
 
 func (a *Application) Destroy(stackName string) error {
+	a.Logger.Println("Inspecting stack")
+	resources, err := a.AWSClient.GetBaseStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	a.Logger.Println("Inspecting user")
+	accessKeys, err := a.AWSClient.ListAccessKeys(resources.BOSHUser)
+	if err != nil {
+		return err
+	}
+
+	a.Logger.Println("Deleting access keys")
+	for _, accessKey := range accessKeys {
+		err = a.AWSClient.DeleteAccessKey(resources.BOSHUser, accessKey)
+		if err != nil {
+			return err
+		}
+	}
+
 	a.Logger.Println("Deleting stack")
-	err := a.AWSClient.DeleteStack(stackName)
+	err = a.AWSClient.DeleteStack(stackName)
 	if err != nil {
 		return err
 	}

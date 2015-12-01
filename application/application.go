@@ -14,6 +14,9 @@ type awsClient interface {
 	CreateKeyPair(stackName string) (string, error)
 	DeleteKeyPair(stackName string) error
 	GetBaseStackResources(stackName string) (awsclient.BaseStackResources, error)
+	CreateAccessKey(userName string) (string, string, error)
+	DeleteAccessKey(userName, accessKey string) error
+	ListAccessKeys(userName string) ([]string, error)
 }
 
 type logger interface {
@@ -29,7 +32,7 @@ type configStore interface {
 }
 
 type manifestBuilder interface {
-	Build(name string, resources awsclient.BaseStackResources) ([]byte, error)
+	Build(name string, resources awsclient.BaseStackResources, accessKey, secretKey string) ([]byte, error)
 }
 
 type Application struct {

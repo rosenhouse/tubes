@@ -1,5 +1,16 @@
+#!/bin/bash -eu
+
+root=$(cd $(dirname "$0")/.. && pwd)
+cd $root
+
 ginkgo \
   -p -r \
   --randomizeAllSpecs \
   --randomizeSuites \
-  -skipPackage acceptance,aws_enemy
+  -skipPackage acceptance,aws_enemy,integration
+
+ginkgo \
+  -p -r \
+  --randomizeAllSpecs \
+  --randomizeSuites \
+  ./integration

@@ -47,7 +47,7 @@ func (c *AWSConfig) buildClient() (*awsclient.Client, error) {
 		return val
 	}
 
-	endpointOverrides, err := parseEndpointOverrides(os.Getenv("TUBES_AWS_ENDPOINTS"))
+	endpointOverrides, err := parseEndpointOverrides(c.EndpointOverrides)
 	if err != nil {
 		return nil, err
 	}

@@ -25,8 +25,14 @@ var _ = Describe("Filesystem Config Store", func() {
 		rootDir1 := tempDir
 		instance1 := application.FilesystemConfigStore{RootDir: rootDir1}
 
+		By("checking that the store is empty")
+		Expect(instance1.IsEmpty()).To(BeTrue())
+
 		By("writing some data using that store")
 		Expect(instance1.Set("some/path/to/a/thing", []byte("some data"))).To(Succeed())
+
+		By("checking that the store is not empty")
+		Expect(instance1.IsEmpty()).To(BeFalse())
 
 		By("moving the data somewhere else on the filesystem")
 		rootDir2, err := ioutil.TempDir("", "tubes-unit-test-dest-")
@@ -36,6 +42,9 @@ var _ = Describe("Filesystem Config Store", func() {
 
 		By("creating another store at the new location")
 		instance2 := application.FilesystemConfigStore{RootDir: destDir}
+
+		By("checking that the store is not empty")
+		Expect(instance2.IsEmpty()).To(BeFalse())
 
 		By("reading the data out of that store")
 		value, err := instance2.Get("some/path/to/a/thing")
@@ -63,6 +72,9 @@ var _ = Describe("Filesystem Config Store", func() {
 
 			Expect(store.Set("key", []byte("value"))).To(BeAssignableToTypeOf(&os.PathError{}))
 			_, err := store.Get("key")
+			Expect(err).To(BeAssignableToTypeOf(&os.PathError{}))
+
+			_, err = store.IsEmpty()
 			Expect(err).To(BeAssignableToTypeOf(&os.PathError{}))
 		})
 	})

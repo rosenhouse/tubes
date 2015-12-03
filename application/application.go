@@ -29,6 +29,7 @@ type logger interface {
 type configStore interface {
 	Get(string) ([]byte, error)
 	Set(string, []byte) error
+	IsEmpty() (bool, error)
 }
 
 type manifestBuilder interface {

@@ -62,3 +62,12 @@ func (s *FilesystemConfigStore) Set(key string, value []byte) error {
 	}
 	return nil
 }
+
+func (s *FilesystemConfigStore) IsEmpty() (bool, error) {
+	fs, err := ioutil.ReadDir(s.RootDir)
+	if err != nil {
+		return false, err
+	}
+
+	return len(fs) == 0, nil
+}

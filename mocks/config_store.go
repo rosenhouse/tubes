@@ -45,8 +45,9 @@ func NewFunctionalConfigStore() *FunctionalConfigStore {
 }
 
 type FunctionalConfigStore struct {
-	Values map[string][]byte
-	Errors map[string]error
+	Values       map[string][]byte
+	Errors       map[string]error
+	IsEmptyError error
 }
 
 func (s *FunctionalConfigStore) Get(key string) ([]byte, error) {
@@ -56,4 +57,8 @@ func (s *FunctionalConfigStore) Get(key string) ([]byte, error) {
 func (s *FunctionalConfigStore) Set(key string, value []byte) error {
 	s.Values[key] = value
 	return s.Errors[key]
+}
+
+func (s *FunctionalConfigStore) IsEmpty() (bool, error) {
+	return len(s.Values) == 0, s.IsEmptyError
 }

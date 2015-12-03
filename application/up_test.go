@@ -101,6 +101,24 @@ var _ = Describe("Up", func() {
 		})
 	})
 
+	Context("when the configStore is non-empty", func() {
+		It("should immediately error", func() {
+			configStore.Values["anything"] = []byte("hello")
+
+			Expect(app.Boot(stackName)).To(MatchError("state directory must be empty"))
+			Expect(awsClient.CreateKeyPairCall.Receives.StackName).To(BeEmpty())
+		})
+	})
+
+	Context("when an error arises from checking the config store for emptiness", func() {
+		It("should immediately error", func() {
+			configStore.IsEmptyError = errors.New("whatever")
+
+			Expect(app.Boot(stackName)).To(MatchError("whatever"))
+			Expect(awsClient.CreateKeyPairCall.Receives.StackName).To(BeEmpty())
+		})
+	})
+
 	Context("when getting the latest NAT AMI errors", func() {
 		It("should immediately return the error", func() {
 			awsClient.GetLatestNATBoxAMIIDCall.Returns.Error = errors.New("some error")

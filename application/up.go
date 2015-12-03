@@ -15,6 +15,14 @@ func (a *Application) Boot(stackName string) error {
 		return fmt.Errorf("invalid name: must match pattern %s", StackNamePattern)
 	}
 
+	emptyConfigStore, err := a.ConfigStore.IsEmpty()
+	if err != nil {
+		return err
+	}
+	if !emptyConfigStore {
+		return fmt.Errorf("state directory must be empty")
+	}
+
 	a.Logger.Printf("Creating keypair...")
 	pemBytes, err := a.AWSClient.CreateKeyPair(stackName)
 	if err != nil {

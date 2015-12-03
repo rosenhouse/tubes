@@ -1,0 +1,93 @@
+{
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Resources": {
+            "ConcourseSecurityGroup": {
+                "Type": "AWS::EC2::SecurityGroup",
+                "Properties": {
+                    "SecurityGroupIngress": [
+                        {
+                            "ToPort": "65535",
+                            "FromPort": "0",
+                            "IpProtocol": "-1",
+                            "CidrIp": {
+                                "Ref": "VPCCIDR"
+                            }
+                        }
+                    ],
+                    "VpcId": {
+                        "Ref": "VPCID"
+                    },
+                    "GroupDescription": "Concourse",
+                    "SecurityGroupEgress": []
+                }
+            },
+            "ConcourseSubnetRouteTableAssociation": {
+                "Type": "AWS::EC2::SubnetRouteTableAssociation",
+                "Properties": {
+                    "SubnetId": {
+                        "Ref": "ConcourseSubnet"
+                    },
+                    "RouteTableId": {
+                        "Ref": "ConcourseRouteTable"
+                    }
+                }
+            },
+            "ConcourseSubnet": {
+                "Type": "AWS::EC2::Subnet",
+                "Properties": {
+                    "VpcId": {
+                        "Ref": "VPCID"
+                    },
+                    "CidrBlock": {
+                        "Ref": "ConcourseSubnetCIDR"
+                    },
+                    "Tags": [
+                        {
+                            "Value": "Concourse",
+                            "Key": "Name"
+                        }
+                    ]
+                }
+            },
+            "ConcourseOutboundRoute": {
+                "Type": "AWS::EC2::Route",
+                "Properties": {
+                    "InstanceId": {
+                        "Ref": "NATInstance"
+                    },
+                    "DestinationCidrBlock": "0.0.0.0/0",
+                    "RouteTableId": {
+                        "Ref": "ConcourseRouteTable"
+                    }
+                }
+            },
+            "ConcourseRouteTable": {
+                "Type": "AWS::EC2::RouteTable",
+                "Properties": {
+                    "VpcId": {
+                        "Ref": "VPCID"
+                    }
+                }
+            }
+        },
+        "Description": "Infrastructure required to bootstrap a Concourse deployment, on top of an existing Base Stack for BOSH",
+        "Parameters": {
+            "VPCID": {
+                "Type": "String",
+                "Description": "VPC ID to create the subnet and security group inside of"
+            },
+            "VPCCIDR": {
+                "Type": "String",
+                "Description": "CIDR block for the VPC."
+            },
+            "NATInstance": {
+                "Type": "String",
+                "Description": "Instance ID of NAT box"
+            },
+            "ConcourseSubnetCIDR": {
+                "Default": "10.0.16.0/24",
+                "Type": "String",
+                "Description": "CIDR block for the Concourse subnet."
+            }
+        }
+}

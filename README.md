@@ -7,7 +7,7 @@ A CLI tool that simplifies the creation of CF development environments on AWS
 
 ## Goals
 - Automate as much as possible
-- Require as minimal human configuration
+- Require minimal human configuration
 - Ease common existing workflows, don't try to replace them
 - Dev environments should be disposable.  Make that easy & secure.
 

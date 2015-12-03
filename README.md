@@ -1,20 +1,38 @@
 # tubes
 
-## TODO
-Need to have:
-- bosh-init from jump box
+**work in progress + side project == be careful**
 
-Want to have:
-- idempotent upsert from state directory
-- BOSH director manifest doesn't use external IP at all (NATs messages stay inside VPC)
-- Complete integration tests against fake AWS
+## Huh?
+A CLI tool that simplifies the creation of CF development environments on AWS
+
+## Goals
+- Automate as much as possible
+- Require as minimal human configuration
+- Ease common existing workflows, don't try to replace them
+- Dev environments should be disposable.  Make that easy & secure.
+
+## What it does today
+
+*Given* I've set my `AWS_*` environment variables on an empty AWS account
+
+*When* I run 
+ 
+ ```bash
+ tubes -n my-environment up && bosh-init deploy environments/my-environment/director.yml
+ ```
+
+*Then* I get a [fully-operational](https://www.google.com/search?q=fully+operational&safe=active&source=lnms&tbm=isch) BOSH director on AWS
+
+## What's next (maybe)
+- generate a Concourse deployment manifest
+- idempotent upsert, using data in state directory (see below)
 - Fake SSH endpoint for integration tests
-- Create CNAME for bosh director
+- Optional hosted zone: CNAMEs for everything
 - Write a log of resources created
+- Optional noob-feature: no ruby required; use the NAT box as a bastion; run `bosh-init deploy` and `bosh deploy` from an SSH session on the NAT box
+- Related optional tin-foil-hat feature: No external IP for the BOSH director, all access via bastion.
 
-### Mutable environments
-
-Variables: in-cloud vs on-filesystem
+### Idempotency user stories
 
 ```
 - Given the state directory is empty

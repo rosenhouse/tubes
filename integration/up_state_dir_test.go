@@ -26,6 +26,8 @@ var _ = Describe("Up action dependency on state directory", func() {
 		args       []string
 	)
 
+	const ExpectedNumFilesInStateDir = 3
+
 	BeforeEach(func() {
 		stackName = fmt.Sprintf("tubes-acceptance-test-%x", rand.Int())
 		var err error
@@ -102,7 +104,7 @@ var _ = Describe("Up action dependency on state directory", func() {
 				It("should save the new state to the state directory", func() {
 					session := start(args...)
 					Eventually(session, DefaultTimeout).Should(gexec.Exit(0))
-					Expect(ioutil.ReadDir(stateDir)).To(HaveLen(2))
+					Expect(ioutil.ReadDir(stateDir)).To(HaveLen(ExpectedNumFilesInStateDir))
 				})
 			})
 			Context("when the state directory is not empty", func() {
@@ -134,7 +136,7 @@ var _ = Describe("Up action dependency on state directory", func() {
 				session := start(args...)
 				Eventually(session, DefaultTimeout).Should(gexec.Exit(0))
 				Expect(dirExists(implicitStateDir)).To(BeTrue())
-				Expect(ioutil.ReadDir(implicitStateDir)).To(HaveLen(2))
+				Expect(ioutil.ReadDir(implicitStateDir)).To(HaveLen(ExpectedNumFilesInStateDir))
 			})
 		})
 
@@ -154,7 +156,7 @@ var _ = Describe("Up action dependency on state directory", func() {
 				It("should save the new state to the implied state directory", func() {
 					session := start(args...)
 					Eventually(session, DefaultTimeout).Should(gexec.Exit(0))
-					Expect(ioutil.ReadDir(implicitStateDir)).To(HaveLen(2))
+					Expect(ioutil.ReadDir(implicitStateDir)).To(HaveLen(ExpectedNumFilesInStateDir))
 				})
 			})
 			Context("when that implied state directory is not empty", func() {

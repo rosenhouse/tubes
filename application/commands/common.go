@@ -110,10 +110,12 @@ func (options *CLIOptions) InitApp(args []string) (*application.Application, err
 	}
 
 	return &application.Application{
-		AWSClient:    awsClient,
-		Logger:       log.New(os.Stderr, "", 0),
-		ResultWriter: os.Stdout,
-		ConfigStore:  configStore,
+		AWSClient:            awsClient,
+		Logger:               log.New(os.Stderr, "", 0),
+		ResultWriter:         os.Stdout,
+		ConfigStore:          configStore,
+		HTTPClient:           &boshio.HTTPClient{},
+		ConcourseTemplateURL: "https://raw.githubusercontent.com/concourse/concourse/master/manifests/aws-vpc.yml",
 		ManifestBuilder: &application.ManifestBuilder{
 			DirectorManifestGenerator: director.DirectorManifestGenerator{},
 			BoshIOClient: &boshio.Client{

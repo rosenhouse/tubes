@@ -3,6 +3,7 @@ package application_test
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -31,6 +32,9 @@ var _ = Describe("Up", func() {
 		Expect(logBuffer).To(gbytes.Say("Latest NAT box AMI is \"some-nat-box-ami-id\""))
 		Expect(logBuffer).To(gbytes.Say("Upserting stack..."))
 		Expect(logBuffer).To(gbytes.Say("Stack update complete"))
+		Expect(logBuffer).To(gbytes.Say("Generating BOSH init manifest"))
+		Expect(logBuffer).To(gbytes.Say("Downloading the concourse manifest from " + app.ConcourseTemplateURL))
+		Expect(logBuffer).To(gbytes.Say("Generating the concourse manifest"))
 		Expect(logBuffer).To(gbytes.Say("Finished"))
 
 		Expect(awsClient.UpsertStackCall.Receives.StackName).To(Equal(stackName))
@@ -73,7 +77,7 @@ var _ = Describe("Up", func() {
 		Expect(awsClient.CreateAccessKeyCall.Receives.UserName).To(Equal("some-bosh-user"))
 	})
 
-	It("should provide the stack resources to the manifest builder", func() {
+	It("should provide the stack resources to the BOSH deployment manifest builder", func() {
 		Expect(app.Boot(stackName)).To(Succeed())
 
 		Expect(manifestBuilder.BuildCall.Receives.StackName).To(Equal(stackName))
@@ -83,7 +87,7 @@ var _ = Describe("Up", func() {
 		Expect(manifestBuilder.BuildCall.Receives.SecretKey).To(Equal("some-secret-key"))
 	})
 
-	It("should store the manifest", func() {
+	It("should store the BOSH deployment manifest", func() {
 		manifestBuilder.BuildCall.Returns.ManifestYAML = []byte("some-manifest-bytes")
 
 		Expect(app.Boot(stackName)).To(Succeed())
@@ -92,6 +96,41 @@ var _ = Describe("Up", func() {
 			"director.yml",
 			[]byte("some-manifest-bytes"),
 		))
+	})
+
+	It("should get the concourse manifest template", func() {
+		manifestTemplate := fmt.Sprintf("some-manifest-bytes-%x", rand.Int31())
+		httpClient.GetCall.Returns.Body = []byte(manifestTemplate + " REPLACE_WITH_AVAILABILITY_ZONE ")
+		Expect(app.Boot(stackName)).To(Succeed())
+
+		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring(manifestTemplate))
+
+		Expect(httpClient.GetCall.Receives.Path).To(Equal(app.ConcourseTemplateURL))
+	})
+
+	It("should replace all placeholders in the template", func() {
+		httpClient.GetCall.Returns.Body = []byte(" REPLACE_WITH_AVAILABILITY_ZONE" +
+			" REPLACE_WITH_UUID" +
+			" REPLACE_WITH_DB_PASSWORD" +
+			" REPLACE_WITH_INTERNAL_SECURITY_GROUP_NAME" +
+			" REPLACE_WITH_INTERNAL_SUBNET" +
+			" REPLACE_WITH_WEB_ELB_NAME")
+		awsClient.GetBaseStackResourcesCall.Returns.Resources.AWSRegion = "some-region"
+		Expect(app.Boot(stackName)).To(Succeed())
+		Expect(configStore.Values["concourse.yml"]).NotTo(ContainSubstring("REPLACE_WITH_AVAILABILITY_ZONE"))
+	})
+
+	It("should replace placeholders with the correct values ", func() {
+		httpClient.GetCall.Returns.Body = []byte(
+			"availability_zone: &az REPLACE_WITH_AVAILABILITY_ZONE" +
+				" password: REPLACE_WITH_DB_PASSWORD" +
+				" REPLACE_WITH_UUID" +
+				" REPLACE_WITH_INTERNAL_SECURITY_GROUP_NAME" +
+				" REPLACE_WITH_INTERNAL_SUBNET" +
+				" REPLACE_WITH_WEB_ELB_NAME")
+		awsClient.GetBaseStackResourcesCall.Returns.Resources.AWSRegion = "some-region"
+		Expect(app.Boot(stackName)).To(Succeed())
+		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("availability_zone: &az some-region"))
 	})
 
 	Context("when the stackName contains invalid characters", func() {
@@ -188,7 +227,7 @@ var _ = Describe("Up", func() {
 		})
 	})
 
-	Context("when building the manifest yaml errors", func() {
+	Context("when building the BOSH director manifest yaml errors", func() {
 		It("should return the error", func() {
 			manifestBuilder.BuildCall.Returns.Error = errors.New("some error")
 
@@ -196,13 +235,31 @@ var _ = Describe("Up", func() {
 		})
 	})
 
-	Context("when storing the manifest yaml fails", func() {
+	Context("when storing the BOSH director manifest yaml fails", func() {
 		It("should return an error", func() {
 			configStore.Errors["director.yml"] = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
-			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Downloading the concourse manifest"))
 		})
 	})
 
+	Context("When downloading the concourse manifest template returns an error", func() {
+		It("should return an error", func() {
+			httpClient.GetCall.Returns.Error = errors.New("Bad Request")
+
+			Expect(app.Boot(stackName)).To(MatchError("Bad Request"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Generating the concourse manifest"))
+		})
+
+	})
+
+	Context("when storing the Concourse manifest yaml fails", func() {
+		It("should return an error", func() {
+			configStore.Errors["concourse.yml"] = errors.New("some concourse manifest storage error")
+
+			Expect(app.Boot(stackName)).To(MatchError("some concourse manifest storage error"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
+		})
+	})
 })

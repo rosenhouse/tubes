@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/rosenhouse/tubes/lib/awsclient"
 )
@@ -76,6 +77,26 @@ func (a *Application) Boot(stackName string) error {
 	}
 
 	err = a.ConfigStore.Set("director.yml", manifestYAML)
+	if err != nil {
+		return err
+	}
+
+	a.Logger.Println("Downloading the concourse manifest from " + a.ConcourseTemplateURL)
+
+	concourseManifestYAMLTemplate, err := a.HTTPClient.Get(a.ConcourseTemplateURL)
+	if err != nil {
+		return err
+	}
+
+	a.Logger.Println("Generating the concourse manifest")
+
+	filledInConcourseTemplate := strings.Replace(
+		string(concourseManifestYAMLTemplate),
+		"REPLACE_WITH_AVAILABILITY_ZONE",
+		baseStackResources.AWSRegion,
+		-1)
+
+	err = a.ConfigStore.Set("concourse.yml", []byte(filledInConcourseTemplate))
 	if err != nil {
 		return err
 	}

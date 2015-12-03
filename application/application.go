@@ -36,11 +36,17 @@ type manifestBuilder interface {
 	Build(name string, resources awsclient.BaseStackResources, accessKey, secretKey string) ([]byte, error)
 }
 
+type httpClient interface {
+	Get(path string) ([]byte, error)
+}
+
 type Application struct {
-	AWSClient       awsClient
-	StateDir        string
-	Logger          logger
-	ResultWriter    io.Writer
-	ConfigStore     configStore
-	ManifestBuilder manifestBuilder
+	AWSClient            awsClient
+	StateDir             string
+	Logger               logger
+	ResultWriter         io.Writer
+	ConfigStore          configStore
+	ManifestBuilder      manifestBuilder
+	HTTPClient           httpClient
+	ConcourseTemplateURL string
 }

@@ -102,6 +102,15 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			Expect(directorYAMLBytes).NotTo(ContainSubstring(envVars["AWS_SECRET_ACCESS_KEY"]))
 		})
 
+		By("storing a generated Concourse deployment manifest in the state directory", func() {
+			concourseYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "concourse.yml"))
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(concourseYAMLBytes).To(ContainSubstring("network: concourse"))
+			Expect(concourseYAMLBytes).NotTo(ContainSubstring("REPLACE_WITH_AVAILABILITY_ZONE"))
+			Expect(concourseYAMLBytes).To(ContainSubstring("us-west-2"))
+		})
+
 		By("tearing down the environment", func() {
 			session := start("-n", stackName, "down")
 

@@ -34,22 +34,26 @@ var (
 	resultBuffer    *gbytes.Buffer
 	configStore     *mocks.FunctionalConfigStore
 	manifestBuilder *mocks.ManifestBuilder
+	httpClient      *mocks.HTTPClient
 )
 
 var _ = BeforeEach(func() {
 	awsClient = &mocks.AWSClient{}
 	configStore = mocks.NewFunctionalConfigStore()
 	manifestBuilder = &mocks.ManifestBuilder{}
+	httpClient = &mocks.HTTPClient{}
 
 	logBuffer = gbytes.NewBuffer()
 	resultBuffer = gbytes.NewBuffer()
 
 	app = &application.Application{
-		AWSClient:       awsClient,
-		Logger:          log.New(logBuffer, "", 0),
-		ResultWriter:    resultBuffer,
-		ConfigStore:     configStore,
-		ManifestBuilder: manifestBuilder,
+		AWSClient:            awsClient,
+		Logger:               log.New(logBuffer, "", 0),
+		ResultWriter:         resultBuffer,
+		ConfigStore:          configStore,
+		ManifestBuilder:      manifestBuilder,
+		HTTPClient:           httpClient,
+		ConcourseTemplateURL: "concourse_template_url",
 	}
 
 	stackName = fmt.Sprintf("some-stack-name-%x", rand.Int31())

@@ -109,12 +109,15 @@ func (options *CLIOptions) InitApp(args []string) (*application.Application, err
 		BaseURL: "https://bosh.io",
 	}
 
+	credentialsGenerator := credentials.Generator{Length: 12}
+
 	return &application.Application{
 		AWSClient:            awsClient,
 		Logger:               log.New(os.Stderr, "", 0),
 		ResultWriter:         os.Stdout,
 		ConfigStore:          configStore,
 		HTTPClient:           &boshio.HTTPClient{},
+		CredentialsGenerator: credentialsGenerator,
 		ConcourseTemplateURL: "https://raw.githubusercontent.com/concourse/concourse/master/manifests/aws-vpc.yml",
 		ManifestBuilder: &application.ManifestBuilder{
 			DirectorManifestGenerator: director.DirectorManifestGenerator{},
@@ -122,7 +125,7 @@ func (options *CLIOptions) InitApp(args []string) (*application.Application, err
 				JSONClient: &boshio.JSONClient{httpClient},
 				HTTPClient: httpClient,
 			},
-			CredentialsGenerator: credentials.Generator{Length: 12},
+			CredentialsGenerator: credentialsGenerator,
 		},
 	}, nil
 }

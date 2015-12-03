@@ -10,6 +10,10 @@ import (
 
 const StackNamePattern = `^[a-zA-Z][-a-zA-Z0-9]*$`
 
+type ConcourseCredentials struct {
+	DBPassword string
+}
+
 func (a *Application) Boot(stackName string) error {
 	regex := regexp.MustCompile(StackNamePattern)
 	if !regex.MatchString(stackName) {
@@ -90,10 +94,22 @@ func (a *Application) Boot(stackName string) error {
 
 	a.Logger.Println("Generating the concourse manifest")
 
+	concourseCredentials := ConcourseCredentials{}
+
 	filledInConcourseTemplate := strings.Replace(
 		string(concourseManifestYAMLTemplate),
 		"REPLACE_WITH_AVAILABILITY_ZONE",
 		baseStackResources.AWSRegion,
+		-1)
+
+	err = a.CredentialsGenerator.Fill(&concourseCredentials)
+	if err != nil {
+		return err
+	}
+
+	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
+		"REPLACE_WITH_DB_PASSWORD",
+		concourseCredentials.DBPassword,
 		-1)
 
 	err = a.ConfigStore.Set("concourse.yml", []byte(filledInConcourseTemplate))

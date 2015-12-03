@@ -22,6 +22,12 @@ var _ = Describe("Up", func() {
 			}
 		awsClient.CreateAccessKeyCall.Returns.AccessKey = "some-access-key"
 		awsClient.CreateAccessKeyCall.Returns.SecretKey = "some-secret-key"
+
+		credentialsGenerator.FillCallback = func(toFill interface{}) error {
+			f := toFill.(*application.ConcourseCredentials)
+			f.DBPassword = "some-db-password"
+			return nil
+		}
 	})
 
 	It("should boot the base stack using the latest NAT ID", func() {
@@ -131,6 +137,7 @@ var _ = Describe("Up", func() {
 		awsClient.GetBaseStackResourcesCall.Returns.Resources.AWSRegion = "some-region"
 		Expect(app.Boot(stackName)).To(Succeed())
 		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("availability_zone: &az some-region"))
+		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("password: some-db-password"))
 	})
 
 	Context("when the stackName contains invalid characters", func() {
@@ -259,6 +266,17 @@ var _ = Describe("Up", func() {
 			configStore.Errors["concourse.yml"] = errors.New("some concourse manifest storage error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some concourse manifest storage error"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
+		})
+	})
+
+	Context("when generating random credentials fails", func() {
+		It("should return an error", func() {
+			credentialsGenerator.FillCallback = func(toFill interface{}) error {
+				return errors.New("filler error (ha ha)")
+			}
+
+			Expect(app.Boot(stackName)).To(MatchError("filler error (ha ha)"))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
 	})

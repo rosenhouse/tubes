@@ -49,4 +49,5 @@ type Application struct {
 	ManifestBuilder      manifestBuilder
 	HTTPClient           httpClient
 	ConcourseTemplateURL string
+	CredentialsGenerator credentialsGenerator
 }

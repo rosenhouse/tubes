@@ -1,7 +1,9 @@
 package integration_test
 
 import (
+	"fmt"
 	"math/rand"
+	"os/exec"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,3 +32,19 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	gexec.CleanupBuildArtifacts()
 })
+
+func buildStarter(workingDir *string, envVars map[string]string) func(...string) *gexec.Session {
+	return func(args ...string) *gexec.Session {
+		command := exec.Command(pathToCLI, args...)
+		command.Env = []string{}
+		if envVars != nil {
+			for k, v := range envVars {
+				command.Env = append(command.Env, fmt.Sprintf("%s=%s", k, v))
+			}
+		}
+		command.Dir = *workingDir
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		return session
+	}
+}

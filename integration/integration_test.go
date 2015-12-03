@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -23,6 +25,8 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		workingDir string
 		fakeAWS    *integration.FakeAWS
 		start      func(args ...string) *gexec.Session
+
+		manifestServer *httptest.Server
 	)
 
 	BeforeEach(func() {
@@ -34,11 +38,18 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		logger := integration.NewAWSCallLogger(GinkgoWriter)
 		fakeAWS = integration.NewFakeAWS(logger)
 
+		concourseManifestTemplate, err := ioutil.ReadFile("fixtures/concourse-template.yml")
+		Expect(err).NotTo(HaveOccurred())
+		manifestServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write(concourseManifestTemplate)
+		}))
+
 		envVars = map[string]string{
-			"AWS_DEFAULT_REGION":    "us-west-2",
-			"AWS_ACCESS_KEY_ID":     "some-access-key-id",
-			"AWS_SECRET_ACCESS_KEY": "some-secret-access-key",
-			"TUBES_AWS_ENDPOINTS":   fakeAWS.EndpointOverridesEnvVar(),
+			"AWS_DEFAULT_REGION":                    "us-west-2",
+			"AWS_ACCESS_KEY_ID":                     "some-access-key-id",
+			"AWS_SECRET_ACCESS_KEY":                 "some-secret-access-key",
+			"TUBES_AWS_ENDPOINTS":                   fakeAWS.EndpointOverridesEnvVar(),
+			"TUBES_CONCOURSE_MANIFEST_TEMPLATE_URL": manifestServer.URL + "/concourse-template.yml",
 		}
 
 		start = buildStarter(&workingDir, envVars)
@@ -46,6 +57,10 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 
 	AfterEach(func() {
 		fakeAWS.Close()
+
+		if manifestServer != nil {
+			manifestServer.Close()
+		}
 	})
 
 	It("should support basic environment manipulation", func() { // slow happy path

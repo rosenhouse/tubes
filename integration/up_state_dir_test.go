@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 
@@ -24,6 +26,8 @@ var _ = Describe("Up action dependency on state directory", func() {
 		fakeAWS    *integration.FakeAWS
 		start      func(args ...string) *gexec.Session
 		args       []string
+
+		manifestServer *httptest.Server
 	)
 
 	const ExpectedNumFilesInStateDir = 3
@@ -37,11 +41,18 @@ var _ = Describe("Up action dependency on state directory", func() {
 		logger := integration.NewAWSCallLogger(GinkgoWriter)
 		fakeAWS = integration.NewFakeAWS(logger)
 
+		concourseManifestTemplate, err := ioutil.ReadFile("fixtures/concourse-template.yml")
+		Expect(err).NotTo(HaveOccurred())
+		manifestServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write(concourseManifestTemplate)
+		}))
+
 		envVars = map[string]string{
-			"AWS_DEFAULT_REGION":    "us-west-2",
-			"AWS_ACCESS_KEY_ID":     "some-access-key-id",
-			"AWS_SECRET_ACCESS_KEY": "some-secret-access-key",
-			"TUBES_AWS_ENDPOINTS":   fakeAWS.EndpointOverridesEnvVar(),
+			"AWS_DEFAULT_REGION":                    "us-west-2",
+			"AWS_ACCESS_KEY_ID":                     "some-access-key-id",
+			"AWS_SECRET_ACCESS_KEY":                 "some-secret-access-key",
+			"TUBES_AWS_ENDPOINTS":                   fakeAWS.EndpointOverridesEnvVar(),
+			"TUBES_CONCOURSE_MANIFEST_TEMPLATE_URL": manifestServer.URL + "/concourse-template.yml",
 		}
 
 		start = buildStarter(&workingDir, envVars)
@@ -49,6 +60,10 @@ var _ = Describe("Up action dependency on state directory", func() {
 
 	AfterEach(func() {
 		fakeAWS.Close()
+
+		if manifestServer != nil {
+			manifestServer.Close()
+		}
 	})
 
 	var dirExists = func(path string) bool {

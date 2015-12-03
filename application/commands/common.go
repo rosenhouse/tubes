@@ -118,7 +118,7 @@ func (options *CLIOptions) InitApp(args []string) (*application.Application, err
 		ConfigStore:          configStore,
 		HTTPClient:           &boshio.HTTPClient{},
 		CredentialsGenerator: credentialsGenerator,
-		ConcourseTemplateURL: "https://raw.githubusercontent.com/concourse/concourse/master/manifests/aws-vpc.yml",
+		ConcourseTemplateURL: options.ConcourseManifestTemplateURL,
 		ManifestBuilder: &application.ManifestBuilder{
 			DirectorManifestGenerator: director.DirectorManifestGenerator{},
 			BoshIOClient: &boshio.Client{

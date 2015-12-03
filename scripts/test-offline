@@ -1,7 +1,10 @@
 #!/bin/bash -eu
 
+echo "Offline test.  This should go fast."
+
 root=$(cd $(dirname "$0")/.. && pwd)
 cd $root
+
 
 ginkgo \
   -p -r \

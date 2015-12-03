@@ -1,10 +1,13 @@
 #!/bin/bash -eu
 
 
-$(dirname $0)/light-test
+$(dirname $0)/test-offline
 
 root=$(cd $(dirname "$0")/.. && pwd)
 cd $root
+
+echo "ONLINE test.  This will use your real AWS credentials and cost you money."
+
 ginkgo ./aws_enemy
 
 echo "Starting acceptance tests.  These take several minutes..."

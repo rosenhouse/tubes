@@ -106,7 +106,7 @@ func (options *CLIOptions) InitApp(args []string) (*application.Application, err
 	configStore := &application.FilesystemConfigStore{RootDir: stateDir}
 
 	httpClient := &boshio.HTTPClient{
-		BaseURL: "https://bosh.io",
+		BaseURL: options.BoshIOURL,
 	}
 
 	credentialsGenerator := credentials.Generator{Length: 12}

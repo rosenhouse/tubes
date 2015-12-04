@@ -80,7 +80,8 @@ var _ = Describe("Up action dependency on state directory", func() {
 			panic("unexpected error: " + e.Error())
 		}
 	}
-	const DefaultTimeout = "5s"
+
+	const DefaultTimeout = "10s"
 
 	Context("when the state directory is set explicitly", func() {
 

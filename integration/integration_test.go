@@ -63,8 +63,9 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		}
 	})
 
-	It("should support basic environment manipulation", func() { // slow happy path
-		const NormalTimeout = "5s"
+	const NormalTimeout = "5s"
+
+	It("should support basic environment manipulation", func() {
 
 		By("booting a fresh environment", func() {
 			session := start("-n", stackName, "up")
@@ -122,7 +123,6 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(concourseYAMLBytes).To(ContainSubstring("network: concourse"))
-			Expect(concourseYAMLBytes).NotTo(ContainSubstring("REPLACE_WITH_AVAILABILITY_ZONE"))
 			Expect(concourseYAMLBytes).To(ContainSubstring("us-west-2"))
 		})
 
@@ -135,6 +135,17 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Finished"))
 			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 		})
+	})
+
+	XIt("should generate a Concourse manifest without any template placeholders", func() {
+		session := start("-n", stackName, "up")
+		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+
+		defaultStateDir := filepath.Join(workingDir, "environments", stackName)
+		concourseYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "concourse.yml"))
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(concourseYAMLBytes).NotTo(ContainSubstring("REPLACE_WITH_"))
 	})
 
 	Context("invalid user input", func() { // fast failing cases

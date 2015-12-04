@@ -21,7 +21,6 @@ type Client struct {
 func (c *Client) LatestRelease(releasePath string) (director.Artifact, error) {
 	var artifact director.Artifact
 	var responseData []struct {
-		Name    string
 		Version string
 		URL     string
 	}
@@ -57,8 +56,7 @@ func (c *Client) LatestStemcell(stemcellName string) (director.Artifact, error) 
 	var artifact director.Artifact
 	var responseData []struct {
 		Light struct {
-			Size int
-			URL  string
+			URL string
 		}
 	}
 	url := "/api/v1/stemcells/" + stemcellName

@@ -27,6 +27,7 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		start      func(args ...string) *gexec.Session
 
 		manifestServer *httptest.Server
+		boshIOServer   *httptest.Server
 	)
 
 	BeforeEach(func() {
@@ -44,12 +45,15 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			w.Write(concourseManifestTemplate)
 		}))
 
+		boshIOServer = httptest.NewServer(&integration.FakeBoshIO{})
+
 		envVars = map[string]string{
 			"AWS_DEFAULT_REGION":                    "us-west-2",
 			"AWS_ACCESS_KEY_ID":                     "some-access-key-id",
 			"AWS_SECRET_ACCESS_KEY":                 "some-secret-access-key",
 			"TUBES_AWS_ENDPOINTS":                   fakeAWS.EndpointOverridesEnvVar(),
 			"TUBES_CONCOURSE_MANIFEST_TEMPLATE_URL": manifestServer.URL + "/concourse-template.yml",
+			"TUBES_BOSH_IO_URL":                     boshIOServer.URL,
 		}
 
 		start = buildStarter(&workingDir, envVars)
@@ -60,6 +64,10 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 
 		if manifestServer != nil {
 			manifestServer.Close()
+		}
+
+		if boshIOServer != nil {
+			boshIOServer.Close()
 		}
 	})
 

@@ -24,7 +24,6 @@ A CLI tool that simplifies the creation of CF development environments on AWS
 *Then* I get a [fully-operational](https://www.google.com/search?q=fully+operational&safe=active&source=lnms&tbm=isch) BOSH director on AWS
 
 ## What's in progress
-- Offline integration test suite, using [fake AWS servers](https://github.com/rosenhouse/awsfaker) (and fake GitHub and bosh.io too)
 - Deploy Concourse
  - Create IaaS resources required by Concourse (ELB + separate network) as a separate CloudFormation stack
  - Generate a Concourse deployment manifest

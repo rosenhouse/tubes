@@ -28,6 +28,7 @@ var _ = Describe("Up action dependency on state directory", func() {
 		args       []string
 
 		manifestServer *httptest.Server
+		boshIOServer   *httptest.Server
 	)
 
 	const ExpectedNumFilesInStateDir = 3
@@ -46,6 +47,7 @@ var _ = Describe("Up action dependency on state directory", func() {
 		manifestServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write(concourseManifestTemplate)
 		}))
+		boshIOServer = httptest.NewServer(&integration.FakeBoshIO{})
 
 		envVars = map[string]string{
 			"AWS_DEFAULT_REGION":                    "us-west-2",
@@ -53,6 +55,7 @@ var _ = Describe("Up action dependency on state directory", func() {
 			"AWS_SECRET_ACCESS_KEY":                 "some-secret-access-key",
 			"TUBES_AWS_ENDPOINTS":                   fakeAWS.EndpointOverridesEnvVar(),
 			"TUBES_CONCOURSE_MANIFEST_TEMPLATE_URL": manifestServer.URL + "/concourse-template.yml",
+			"TUBES_BOSH_IO_URL":                     boshIOServer.URL,
 		}
 
 		start = buildStarter(&workingDir, envVars)
@@ -63,6 +66,10 @@ var _ = Describe("Up action dependency on state directory", func() {
 
 		if manifestServer != nil {
 			manifestServer.Close()
+		}
+
+		if boshIOServer != nil {
+			boshIOServer.Close()
 		}
 	})
 

@@ -24,15 +24,19 @@ A CLI tool that simplifies the creation of CF development environments on AWS
 *Then* I get a [fully-operational](https://www.google.com/search?q=fully+operational&safe=active&source=lnms&tbm=isch) BOSH director on AWS
 
 ## What's in progress
-- generate a Concourse deployment manifest
+- Generate a Concourse deployment manifest
 
 ## What's next (maybe)
-- idempotent upsert, using data in state directory (see below)
-- Fake SSH endpoint for integration tests
-- Optional hosted zone: CNAMEs for everything
-- Write a log of resources created
-- Optional noob-feature: no ruby required; use the NAT box as a bastion; run `bosh-init deploy` and `bosh deploy` from an SSH session on the NAT box
-- Related optional tin-foil-hat feature: No external IP for the BOSH director, all access via bastion.
+- Idempotent upsert, using data in state directory (see below)
+- Optional hosted zone: DNS for everything
+- Feature to rotate credentials?
+- Keep a log somewhere, for auditing?
+- Generate a pipeline that idempotently deploys a CF on AWS
+- Separate binaries for separate steps (package some as Concourse resources?)
+  - CloudFormation resource supporting both `in` and `out`
+  - Credential-generation
+- For newbies: no ruby required, instead `ssh` to the NAT box and uses it as a bastion to run `bosh-init deploy` and `bosh deploy`
+- For the paranoid: No external IP for the BOSH director, all access via bastion.
 
 ### Idempotency user stories
 

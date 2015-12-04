@@ -24,12 +24,15 @@ A CLI tool that simplifies the creation of CF development environments on AWS
 *Then* I get a [fully-operational](https://www.google.com/search?q=fully+operational&safe=active&source=lnms&tbm=isch) BOSH director on AWS
 
 ## What's in progress
-- Generate a Concourse deployment manifest
+- Deploy Concourse
+ - Create IaaS resources required by Concourse (ELB + separate network) as a separate CloudFormation stack
+ - Generate a Concourse deployment manifest
 
 ## What's next (maybe)
 - Idempotent upsert, using data in state directory (see below)
 - Optional hosted zone: DNS for everything
 - Feature to rotate credentials?
+- Deploy CF, somehow?
 - Keep a log somewhere, for auditing?
 - Generate a pipeline that idempotently deploys a CF on AWS
 - Separate binaries for separate steps (package some as Concourse resources?)

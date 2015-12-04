@@ -23,8 +23,10 @@ A CLI tool that simplifies the creation of CF development environments on AWS
 
 *Then* I get a [fully-operational](https://www.google.com/search?q=fully+operational&safe=active&source=lnms&tbm=isch) BOSH director on AWS
 
-## What's next (maybe)
+## What's in progress
 - generate a Concourse deployment manifest
+
+## What's next (maybe)
 - idempotent upsert, using data in state directory (see below)
 - Fake SSH endpoint for integration tests
 - Optional hosted zone: CNAMEs for everything

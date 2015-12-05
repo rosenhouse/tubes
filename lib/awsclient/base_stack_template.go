@@ -11,7 +11,7 @@ var BaseStackTemplate = Template{
 			Description: "Name of existing SSH Keypair to use for instances",
 		},
 		"NATInstanceAMI": Parameter{
-			Type:        "String",
+			Type:        "AWS::EC2::Image::Id",
 			Description: "AMI ID for NAT instance.  Use the get-nat-ami tool to find the current AMI ID",
 		},
 		"NATInstanceType": Parameter{

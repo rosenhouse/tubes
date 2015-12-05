@@ -7,7 +7,7 @@ var ConcourseStackTemplate = Template{
 	Description:              "Infrastructure required to bootstrap a Concourse deployment, on top of an existing Base Stack for BOSH",
 	Parameters: map[string]Parameter{
 		"VPCID": Parameter{
-			Type:        "String",
+			Type:        "AWS::EC2::VPC::Id",
 			Description: "VPC ID to create the subnet and security group inside of",
 		},
 		"VPCCIDR": Parameter{
@@ -16,7 +16,7 @@ var ConcourseStackTemplate = Template{
 			Description: "CIDR block of the parent VPC",
 		},
 		"NATInstance": Parameter{
-			Type:        "String",
+			Type:        "AWS::EC2::Instance::Id",
 			Description: "Instance ID of NAT box",
 		},
 		"ConcourseSubnetCIDR": Parameter{

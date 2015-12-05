@@ -78,16 +78,17 @@
             },
             "VPCCIDR": {
                 "Type": "String",
-                "Description": "CIDR block for the VPC."
+                "Default": "10.0.0.0/16",
+                "Description": "CIDR block of the parent VPC"
             },
             "NATInstance": {
                 "Type": "String",
                 "Description": "Instance ID of NAT box"
             },
             "ConcourseSubnetCIDR": {
-                "Default": "10.0.16.0/24",
                 "Type": "String",
-                "Description": "CIDR block for the Concourse subnet."
+                "Default": "10.0.16.0/24",
+                "Description": "CIDR block for the Concourse subnet"
             }
         }
 }

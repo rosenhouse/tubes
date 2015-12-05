@@ -13,6 +13,10 @@ type jsonClient interface {
 	Get(route string, responseData interface{}) error
 }
 
+type httpClient interface {
+	Get(path string) ([]byte, error)
+}
+
 type Client struct {
 	JSONClient jsonClient
 	HTTPClient httpClient

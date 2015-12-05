@@ -1,17 +1,18 @@
-package boshio_test
+package webclient_test
 
 import (
 	"errors"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/rosenhouse/tubes/lib/boshio"
+
+	"github.com/rosenhouse/tubes/lib/webclient"
 	"github.com/rosenhouse/tubes/mocks"
 )
 
 var _ = Describe("JSON Client", func() {
 	var (
-		client         *boshio.JSONClient
+		client         *webclient.JSONClient
 		httpClient     *mocks.HTTPClient
 		responseStruct struct {
 			SomeField string `json:"SomeField"`
@@ -20,7 +21,7 @@ var _ = Describe("JSON Client", func() {
 
 	BeforeEach(func() {
 		httpClient = &mocks.HTTPClient{}
-		client = &boshio.JSONClient{HTTPClient: httpClient}
+		client = &webclient.JSONClient{HTTPClient: httpClient}
 		responseStruct.SomeField = ""
 	})
 
@@ -45,5 +46,4 @@ var _ = Describe("JSON Client", func() {
 			Expect(err).To(MatchError(HavePrefix("server returned malformed JSON")))
 		})
 	})
-
 })

@@ -1,4 +1,4 @@
-package boshio
+package webclient
 
 import (
 	"encoding/json"

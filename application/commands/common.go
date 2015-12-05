@@ -14,6 +14,7 @@ import (
 	"github.com/rosenhouse/tubes/lib/boshio"
 	"github.com/rosenhouse/tubes/lib/credentials"
 	"github.com/rosenhouse/tubes/lib/director"
+	"github.com/rosenhouse/tubes/lib/webclient"
 )
 
 func parseError(fmtString string, args ...interface{}) *flags.Error {
@@ -105,7 +106,7 @@ func (options *CLIOptions) InitApp(args []string) (*application.Application, err
 
 	configStore := &application.FilesystemConfigStore{RootDir: stateDir}
 
-	httpClient := &boshio.HTTPClient{
+	boshIOHttpClient := &webclient.HTTPClient{
 		BaseURL: options.BoshIOURL,
 	}
 
@@ -116,14 +117,14 @@ func (options *CLIOptions) InitApp(args []string) (*application.Application, err
 		Logger:               log.New(os.Stderr, "", 0),
 		ResultWriter:         os.Stdout,
 		ConfigStore:          configStore,
-		HTTPClient:           &boshio.HTTPClient{},
+		HTTPClient:           &webclient.HTTPClient{},
 		CredentialsGenerator: credentialsGenerator,
 		ConcourseTemplateURL: options.ConcourseManifestTemplateURL,
 		ManifestBuilder: &application.ManifestBuilder{
 			DirectorManifestGenerator: director.DirectorManifestGenerator{},
 			BoshIOClient: &boshio.Client{
-				JSONClient: &boshio.JSONClient{httpClient},
-				HTTPClient: httpClient,
+				JSONClient: &webclient.JSONClient{boshIOHttpClient},
+				HTTPClient: boshIOHttpClient,
 			},
 			CredentialsGenerator: credentialsGenerator,
 		},

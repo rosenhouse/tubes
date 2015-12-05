@@ -1,4 +1,4 @@
-package boshio_test
+package webclient_test
 
 import (
 	"bytes"
@@ -9,13 +9,14 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/rosenhouse/tubes/lib/boshio"
+
+	"github.com/rosenhouse/tubes/lib/webclient"
 )
 
 var _ = Describe("HTTP Client", func() {
 	var (
 		server     *httptest.Server
-		c          *boshio.HTTPClient
+		c          *webclient.HTTPClient
 		requestURL *url.URL
 	)
 
@@ -25,7 +26,7 @@ var _ = Describe("HTTP Client", func() {
 			w.Write([]byte("some-bytes"))
 		}))
 
-		c = &boshio.HTTPClient{BaseURL: server.URL}
+		c = &webclient.HTTPClient{BaseURL: server.URL}
 	})
 
 	AfterEach(func() {
@@ -107,7 +108,7 @@ var _ = Describe("HTTP Client", func() {
 			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusTeapot)
 			}))
-			c := boshio.HTTPClient{BaseURL: testServer.URL}
+			c := webclient.HTTPClient{BaseURL: testServer.URL}
 
 			_, err := c.Get("/some/path")
 			Expect(err).To(MatchError(HavePrefix("server returned status code 418")))
@@ -120,7 +121,7 @@ var _ = Describe("HTTP Client", func() {
 				w.Header().Set("Content-Length", "12345")
 				w.Write([]byte("foo"))
 			}))
-			c := boshio.HTTPClient{BaseURL: testServer.URL}
+			c := webclient.HTTPClient{BaseURL: testServer.URL}
 
 			_, err := c.Get("/some/path")
 			Expect(err).To(MatchError("unexpected EOF"))

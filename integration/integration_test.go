@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 
+	"gopkg.in/yaml.v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -120,7 +122,36 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			directorYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "director.yml"))
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(directorYAMLBytes).To(ContainSubstring("resource_pools:"))
+			var directorYAML struct {
+				Networks []struct {
+					Subnets []struct {
+						Cloud_Properties struct {
+							Subnet string
+						}
+					}
+				}
+				Cloud_Provider struct {
+					MBus       string
+					SSH_Tunnel struct {
+						Host string
+					}
+					Properties struct {
+						AWS struct {
+							Access_Key_ID           string
+							Secret_Access_Key       string
+							Default_Security_Groups []string
+						}
+					}
+				}
+			}
+			Expect(yaml.Unmarshal(directorYAMLBytes, &directorYAML)).To(Succeed())
+
+			Expect(directorYAML.Networks[0].Subnets[0].Cloud_Properties.Subnet).To(Equal("subnet-12345"))
+			Expect(directorYAML.Cloud_Provider.SSH_Tunnel.Host).To(Equal("192.168.12.13"))
+			Expect(directorYAML.Cloud_Provider.MBus).To(ContainSubstring("@192.168.12.13:6868"))
+			Expect(directorYAML.Cloud_Provider.Properties.AWS.Access_Key_ID).To(Equal("some-access-key"))
+			Expect(directorYAML.Cloud_Provider.Properties.AWS.Secret_Access_Key).To(Equal("some-secret-key"))
+			Expect(directorYAML.Cloud_Provider.Properties.AWS.Default_Security_Groups[0]).To(Equal("sg-1234"))
 
 			By("ensuring we create fresh credentials for the BOSH director")
 			Expect(directorYAMLBytes).NotTo(ContainSubstring(envVars["AWS_SECRET_ACCESS_KEY"]))

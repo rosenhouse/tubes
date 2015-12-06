@@ -1,0 +1,11 @@
+#!/bin/bash -exu
+
+root=$(cd $(dirname "$0")/.. && pwd)
+cd $root
+
+go get -v ./... || true
+
+# test dependencies
+go get -v github.com/onsi/gomega
+go get -v github.com/onsi/ginkgo/...
+go install github.com/onsi/ginkgo/ginkgo

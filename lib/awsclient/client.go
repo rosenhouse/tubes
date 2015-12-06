@@ -76,8 +76,9 @@ func New(config Config) (*Client, error) {
 	session := session.New(sdkConfig)
 
 	if config.CloudFormationWaitTimeout == 0 {
-		config.CloudFormationWaitTimeout = 5 * time.Minute
+		return nil, fmt.Errorf("AWS config CloudFormationWaitTimeout must be a positive timeout")
 	}
+
 	ec2EndpointConfig, err := config.getEndpoint("ec2")
 	if err != nil {
 		return nil, err

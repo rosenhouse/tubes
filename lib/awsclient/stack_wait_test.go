@@ -142,7 +142,7 @@ var _ = Describe("waiting for the stack changes to complete", func() {
 			}
 
 			Expect(client.WaitForStack(stackName, pundit)).To(MatchError(
-				"timed out waiting for stack change to complete (max 1m5s, some status 13)"))
+				"timed out waiting for stack change to complete (max 1m5s, some status 13).  Check CloudFormation for details."))
 		})
 	})
 

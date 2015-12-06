@@ -40,7 +40,7 @@ func (c *Client) WaitForStack(stackName string, pundit CloudFormationStatusPundi
 		}
 
 		if elapsed >= c.CloudFormationWaitTimeout {
-			return fmt.Errorf("timed out waiting for stack change to complete (max %s, %s)", elapsed, status)
+			return fmt.Errorf("timed out waiting for stack change to complete (max %s, %s).  Check CloudFormation for details.", elapsed, status)
 		}
 		c.Clock.Sleep(sleepDuration)
 		elapsed += sleepDuration

@@ -2,6 +2,7 @@ package awsclient_test
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -18,11 +19,25 @@ var _ = Describe("AWS Client", func() {
 		client awsclient.Client
 	)
 	Describe("New()", func() {
+		var config awsclient.Config
+		BeforeEach(func() {
+			config = awsclient.Config{
+				Region: "some-region",
+				CloudFormationWaitTimeout: 1 * time.Minute,
+			}
+		})
+
+		Context("when configured with an empty CloudFormationWaitTimeout", func() {
+			It("should error", func() {
+				config.CloudFormationWaitTimeout = 0
+				_, err := awsclient.New(config)
+				Expect(err).To(MatchError("AWS config CloudFormationWaitTimeout must be a positive timeout"))
+			})
+		})
+
 		Context("when configured without endpoint overrides", func() {
 			It("should default to the normal endpoints", func() {
-				client, err := awsclient.New(awsclient.Config{
-					Region: "some-region",
-				})
+				client, err := awsclient.New(config)
 				Expect(err).NotTo(HaveOccurred())
 
 				ec2Client := client.EC2.(*ec2.EC2)
@@ -40,13 +55,11 @@ var _ = Describe("AWS Client", func() {
 					"cloudformation": "http://some-fake-cloudformation-server.example.com:1234",
 					"iam":            "http://some-fake-iam-server.example.com:1234",
 				}
+				config.EndpointOverrides = endpointOverrides
 			})
 
 			It("should set all the endpoints", func() {
-				client, err := awsclient.New(awsclient.Config{
-					Region:            "some-region",
-					EndpointOverrides: endpointOverrides,
-				})
+				client, err := awsclient.New(config)
 				Expect(err).NotTo(HaveOccurred())
 
 				ec2Client := client.EC2.(*ec2.EC2)
@@ -59,10 +72,7 @@ var _ = Describe("AWS Client", func() {
 			Context("when some endpoints are missing", func() {
 				It("should return an error", func() {
 					endpointOverrides["cloudformation"] = ""
-					client, err := awsclient.New(awsclient.Config{
-						Region:            "some-region",
-						EndpointOverrides: endpointOverrides,
-					})
+					client, err := awsclient.New(config)
 					Expect(client).To(BeNil())
 					Expect(err).To(MatchError(`EndpointOverrides set, but missing required service "cloudformation"`))
 				})

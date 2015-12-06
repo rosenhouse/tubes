@@ -6,11 +6,14 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/aws/aws-sdk-go/service/ec2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/rosenhouse/tubes/application"
 	"github.com/rosenhouse/tubes/application/commands"
+	"github.com/rosenhouse/tubes/lib/awsclient"
 )
 
 func expectAreSameDirectory(dir1, dir2 string) {
@@ -28,6 +31,7 @@ func expectAreSameDirectory(dir1, dir2 string) {
 var _ = Describe("InitApp", func() {
 	var (
 		workingDir string
+		options    commands.CLIOptions
 	)
 
 	BeforeEach(func() {
@@ -36,6 +40,17 @@ var _ = Describe("InitApp", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(os.Chdir(workingDir)).To(Succeed())
+
+		options = commands.CLIOptions{
+			Name: "some-stack-name",
+			AWSConfig: commands.AWSConfig{
+				Region:    "some-region",
+				AccessKey: "some-access-key",
+				SecretKey: "some-secret-key",
+
+				StackWaitTimeout: 1 * time.Second,
+			},
+		}
 	})
 
 	AfterEach(func() {
@@ -43,17 +58,19 @@ var _ = Describe("InitApp", func() {
 		Expect(os.RemoveAll(workingDir)).To(Succeed())
 	})
 
+	It("should pull in AWS client config", func() {
+		app, err := options.InitApp(nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		awsClient := app.AWSClient.(*awsclient.Client)
+		Expect(awsClient.CloudFormationWaitTimeout).To(Equal(1 * time.Second))
+
+		ec2Client := awsClient.EC2.(*ec2.EC2)
+		Expect(*ec2Client.Config.Region).To(Equal("some-region"))
+	})
+
 	Context("when the state directory is not set", func() {
 		It("should create a subdirectory of the working directory", func() {
-			options := commands.CLIOptions{
-				Name: "some-stack-name",
-				AWSConfig: commands.AWSConfig{
-					Region:    "some-region",
-					AccessKey: "some-access-key",
-					SecretKey: "some-secret-key",
-				},
-			}
-
 			app, err := options.InitApp(nil)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -66,15 +83,7 @@ var _ = Describe("InitApp", func() {
 	Context("when the state directory is set", func() {
 		Context("when set to a non-existent directory", func() {
 			It("should return an error", func() {
-				options := commands.CLIOptions{
-					Name: "some-stack-name",
-					AWSConfig: commands.AWSConfig{
-						Region:    "some-region",
-						AccessKey: "some-access-key",
-						SecretKey: "some-secret-key",
-					},
-					StateDir: fmt.Sprintf("-nope-%x-nope", rand.Int31()),
-				}
+				options.StateDir = fmt.Sprintf("-nope-%x-nope", rand.Int31())
 
 				_, err := options.InitApp(nil)
 				Expect(err).To(MatchError(ContainSubstring("state directory not found")))
@@ -84,15 +93,7 @@ var _ = Describe("InitApp", func() {
 			It("should return an error", func() {
 				someFilePath := filepath.Join(workingDir, "this-exists")
 				Expect(ioutil.WriteFile(someFilePath, []byte("whatever"), 0600)).To(Succeed())
-				options := commands.CLIOptions{
-					Name: "some-stack-name",
-					AWSConfig: commands.AWSConfig{
-						Region:    "some-region",
-						AccessKey: "some-access-key",
-						SecretKey: "some-secret-key",
-					},
-					StateDir: someFilePath,
-				}
+				options.StateDir = someFilePath
 
 				_, err := options.InitApp(nil)
 				Expect(err).To(MatchError(ContainSubstring("state directory not a directory")))

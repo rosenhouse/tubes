@@ -5,15 +5,15 @@ echo "Offline test.  This should go fast."
 root=$(cd $(dirname "$0")/.. && pwd)
 cd $root
 
+ginkgo_opts="-p -r -randomizeAllSpecs -randomizeSuites"
+if [ "${CI:-false}" = "true" ]; then
+  ginkgo_opts="$ginkgo_opts --compilers=2 --nodes=2"
+fi
 
 ginkgo \
-  -p -r \
-  --randomizeAllSpecs \
-  --randomizeSuites \
+  $ginkgo_opts \
   -skipPackage acceptance,aws_enemy,integration
 
 ginkgo \
-  -p -r \
-  --randomizeAllSpecs \
-  --randomizeSuites \
+  $ginkgo_opts \
   ./integration

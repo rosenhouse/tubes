@@ -1,4 +1,5 @@
 # tubes
+[![Build Status](https://api.travis-ci.org/rosenhouse/tubes.png?branch=master)](http://travis-ci.org/rosenhouse/tubes)
 
 **work in progress + side project == be careful**
 

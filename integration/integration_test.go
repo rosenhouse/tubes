@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 
-	"gopkg.in/yaml.v1"
+	"gopkg.in/yaml.v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

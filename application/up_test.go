@@ -36,7 +36,7 @@ var _ = Describe("Up", func() {
 		Expect(logBuffer).To(gbytes.Say("Creating keypair"))
 		Expect(logBuffer).To(gbytes.Say("Looking for latest AWS NAT box AMI..."))
 		Expect(logBuffer).To(gbytes.Say("Latest NAT box AMI is \"some-nat-box-ami-id\""))
-		Expect(logBuffer).To(gbytes.Say("Upserting stack..."))
+		Expect(logBuffer).To(gbytes.Say("Upserting stack.  Check CloudFormation console for details."))
 		Expect(logBuffer).To(gbytes.Say("Stack update complete"))
 		Expect(logBuffer).To(gbytes.Say("Generating BOSH init manifest"))
 		Expect(logBuffer).To(gbytes.Say("Downloading the concourse manifest from " + app.ConcourseTemplateURL))
@@ -191,7 +191,7 @@ var _ = Describe("Up", func() {
 			configStore.Errors["ssh-key"] = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
-			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Upserting stack..."))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Upserting stack"))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
 	})

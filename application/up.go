@@ -51,7 +51,7 @@ func (a *Application) Boot(stackName string) error {
 		"KeyName":        stackName,
 	}
 	templateJSON := awsclient.BaseStackTemplate.String()
-	a.Logger.Println("Upserting stack...")
+	a.Logger.Println("Upserting stack.  Check CloudFormation console for details.")
 	err = a.AWSClient.UpsertStack(stackName, templateJSON, parameters)
 	if err != nil {
 		return err

@@ -11,6 +11,41 @@ A CLI tool that simplifies the creation of CF development environments on AWS
 - Ease common existing workflows, don't try to replace them
 - Encourage disposability of environments
 
+## Contributing
+Pull requests are welcome.  Here's how to get started:
+
+1. Get the source
+ ```bash
+ [ -d $GOPATH ] && cd $GOPATH
+ mkdir -p src/github.com/rosenhouse && cd src/github.com/rosenhouse
+ git clone git://github.com/rosenhouse/tubes
+ cd tubes
+ ```
+ 
+2. Get dependencies
+ ```bash
+ ./scripts/get-dependencies
+ ```
+
+3. Build the binary (optional)
+ ```bash
+ go build
+ ```
+ 
+4. Run the offline test suite
+ ```bash
+ ./scripts/test-offline
+ ```
+ 
+5. Run the online test suite (optional)
+
+ Requires AWS account region & credentials in your environment.
+ 
+ ```bash
+ ./scripts/test-full  # WARNING: this uses a REAL AWS account and will cost you real money.
+ ```
+
+
 ## What it does today
 
 *Given* I've set my `AWS_*` environment variables on an empty AWS account

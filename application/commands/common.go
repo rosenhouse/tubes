@@ -54,10 +54,11 @@ func (c *AWSConfig) buildClient() (*awsclient.Client, error) {
 	}
 
 	config := awsclient.Config{
-		Region:            load(c.Region),
-		AccessKey:         load(c.AccessKey),
-		SecretKey:         load(c.SecretKey),
-		EndpointOverrides: endpointOverrides,
+		Region:                    load(c.Region),
+		AccessKey:                 load(c.AccessKey),
+		SecretKey:                 load(c.SecretKey),
+		EndpointOverrides:         endpointOverrides,
+		CloudFormationWaitTimeout: c.StackWaitTimeout,
 	}
 
 	if missing {

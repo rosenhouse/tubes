@@ -1,5 +1,7 @@
 package commands
 
+import "time"
+
 type CLIOptions struct {
 	Name      string    `short:"n" long:"name"  description:"Name of environment to manipulate"`
 	AWSConfig AWSConfig `group:"aws"`
@@ -26,10 +28,12 @@ type Show struct {
 }
 
 type AWSConfig struct {
-	Region            string `long:"aws-region" env:"AWS_DEFAULT_REGION" description:"defaults to"`
-	AccessKey         string `long:"aws-access-key" env:"AWS_ACCESS_KEY_ID" description:"defaults to"`
-	SecretKey         string `long:"aws-secret-key" env:"AWS_SECRET_ACCESS_KEY" description:"defaults to"`
-	EndpointOverrides string `long:"endpoint-overrides" env:"TUBES_AWS_ENDPOINTS" description:"JSON hash of AWS endpoint URLs.  Override for testing."`
+	Region    string `long:"aws-region" env:"AWS_DEFAULT_REGION" description:"defaults to"`
+	AccessKey string `long:"aws-access-key" env:"AWS_ACCESS_KEY_ID" description:"defaults to"`
+	SecretKey string `long:"aws-secret-key" env:"AWS_SECRET_ACCESS_KEY" description:"defaults to"`
+
+	EndpointOverrides string        `long:"endpoint-overrides" env:"TUBES_AWS_ENDPOINTS" description:"JSON hash of AWS endpoint URLs.  Override for testing."`
+	StackWaitTimeout  time.Duration `long:"stack-wait-timeout" default:"7m" description:"maximum time to wait for CloudFormation stack changes"`
 }
 
 func New() *CLIOptions {

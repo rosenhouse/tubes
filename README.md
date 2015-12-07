@@ -72,8 +72,10 @@ Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are s
 4. Manually `bosh-init` the director
  ```bash
  bosh-init deploy environments/my-environment/director.yml
- bosh target $(tubes -n my-environment show --bosh-ip)
- bosh status --uuid
+ export BOSH_USER=admin
+ export BOSH_PASSWORD="$(tubes -n my-environment show --bosh-password)"
+ export BOSH_TARGET="$(tubes -n my-environment show --bosh-ip)"
+ bosh -t $BOSH_TARGET status --uuid
  ```
 
 5. Manually edit the partially-generated Concourse deployment manifest

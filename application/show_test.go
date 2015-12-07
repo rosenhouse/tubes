@@ -43,7 +43,7 @@ var _ = Describe("Show", func() {
 		})
 	})
 
-	Context("when the BOSH IP options is set", func() {
+	Context("when the BOSH IP option is set", func() {
 		BeforeEach(func() { options.BoshIP = true })
 
 		It("should print the BOSH IP to the result writer", func() {
@@ -57,6 +57,25 @@ var _ = Describe("Show", func() {
 		Context("when the config store get errors", func() {
 			It("should return the error", func() {
 				configStore.Errors["bosh-ip"] = errors.New("some error")
+				Expect(app.Show(stackName, options)).To(MatchError("some error"))
+			})
+		})
+	})
+
+	Context("when the BOSH password option is set", func() {
+		BeforeEach(func() { options.BoshPassword = true })
+
+		It("should print the BOSH password to the result writer", func() {
+			configStore.Values["bosh-password"] = []byte("some-password")
+
+			Expect(app.Show(stackName, options)).To(Succeed())
+
+			Expect(resultBuffer.Contents()).To(Equal([]byte("some-password")))
+		})
+
+		Context("when the config store get errors", func() {
+			It("should return the error", func() {
+				configStore.Errors["bosh-password"] = errors.New("some error")
 				Expect(app.Show(stackName, options)).To(MatchError("some error"))
 			})
 		})

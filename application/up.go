@@ -81,12 +81,17 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 
-	manifestYAML, _, err := a.ManifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
+	manifestYAML, boshPassword, err := a.ManifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 	if err != nil {
 		return err
 	}
 
 	err = a.ConfigStore.Set("director.yml", manifestYAML)
+	if err != nil {
+		return err
+	}
+
+	err = a.ConfigStore.Set("bosh-password", []byte(boshPassword))
 	if err != nil {
 		return err
 	}

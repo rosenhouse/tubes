@@ -98,6 +98,9 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		By("storing the BOSH IP on the filesystem", func() {
 			Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "bosh-ip"))).To(Equal([]byte("192.168.12.13")))
 		})
+		By("storing the BOSH admin password on the filesystem", func() {
+			Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "bosh-password"))).To(HaveLen(12))
+		})
 
 		By("exposing the SSH key", func() {
 			session := start("-n", stackName, "show", "--ssh")
@@ -118,6 +121,14 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 
 			Expect(session.Out.Contents()).To(Equal([]byte("192.168.12.13")))
+		})
+
+		By("exposing the bosh password", func() {
+			session := start("-n", stackName, "show", "--bosh-password")
+
+			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+
+			Expect(session.Out.Contents()).To(HaveLen(12))
 		})
 
 		By("supporting an explicit state directory, rather than the implicit subdirectory of the working directory", func() {

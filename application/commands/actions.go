@@ -26,7 +26,8 @@ func (c *Show) Execute(args []string) error {
 		return err
 	}
 	return app.Show(c.Name, application.ShowOptions{
-		SSHKey: c.SSHKey,
-		BoshIP: c.BoshIP,
+		SSHKey:       c.SSHKey,
+		BoshIP:       c.BoshIP,
+		BoshPassword: c.BoshPassword,
 	})
 }

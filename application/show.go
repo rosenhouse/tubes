@@ -3,8 +3,9 @@ package application
 import "fmt"
 
 type ShowOptions struct {
-	SSHKey bool
-	BoshIP bool
+	SSHKey       bool
+	BoshIP       bool
+	BoshPassword bool
 }
 
 func (a *Application) Show(stackName string, options ShowOptions) error {
@@ -25,6 +26,18 @@ func (a *Application) Show(stackName string, options ShowOptions) error {
 
 	if options.BoshIP {
 		val, err := a.ConfigStore.Get("bosh-ip")
+		if err != nil {
+			return err
+		}
+		val = append(val)
+		_, err = a.ResultWriter.Write(val)
+		if err != nil {
+			return err
+		}
+	}
+
+	if options.BoshPassword {
+		val, err := a.ConfigStore.Get("bosh-password")
 		if err != nil {
 			return err
 		}

@@ -26,8 +26,9 @@ type Down struct {
 type Show struct {
 	*CLIOptions `no-flag:"true"`
 
-	SSHKey bool `long:"ssh" description:"print the SSH key needed to login to the VMs instances"`
-	BoshIP bool `long:"bosh-ip" description:"print the IP address of the BOSH director"`
+	SSHKey       bool `long:"ssh" description:"print the SSH key needed to login to the VMs instances"`
+	BoshIP       bool `long:"bosh-ip" description:"print the IP address of the BOSH director"`
+	BoshPassword bool `long:"bosh-password" description:"print the admin password for the BOSH director"`
 }
 
 type AWSConfig struct {

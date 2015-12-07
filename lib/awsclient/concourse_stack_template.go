@@ -24,6 +24,10 @@ var ConcourseStackTemplate = Template{
 			Default:     "10.0.16.0/24",
 			Description: "CIDR block for the Concourse subnet",
 		},
+		"PubliclyRoutableSubnetID": Parameter{
+			Type:        "String",
+			Description: "ID of a publicly routable subnet, usually the BOSH subnet from the base stack",
+		},
 	},
 	Resources: map[string]Resource{
 		"ConcourseSecurityGroup": {
@@ -69,6 +73,62 @@ var ConcourseStackTemplate = Template{
 			Type: "AWS::EC2::RouteTable",
 			Properties: map[string]interface{}{
 				"VpcId": Ref("VPCID"),
+			},
+		},
+		"LoadBalancerSecurityGroup": {
+			Type: "AWS::EC2::SecurityGroup",
+			Properties: map[string]interface{}{
+				"SecurityGroupIngress": []Rule{
+					{
+						ToPort:     80,
+						FromPort:   80,
+						IpProtocol: "tcp",
+						CidrIp:     "0.0.0.0/0",
+					},
+					{
+						ToPort:     2222,
+						FromPort:   2222,
+						IpProtocol: "tcp",
+						CidrIp:     "0.0.0.0/0",
+					},
+					{
+						ToPort:     443,
+						FromPort:   443,
+						IpProtocol: "tcp",
+						CidrIp:     "0.0.0.0/0",
+					},
+				},
+				"VpcId":               Ref("VPCID"),
+				"GroupDescription":    "Concourse-LoadBalancer",
+				"SecurityGroupEgress": []interface{}{},
+			},
+		},
+		"LoadBalancer": {
+			Type: "AWS::ElasticLoadBalancing::LoadBalancer",
+			Properties: map[string]interface{}{
+				"Subnets":        []interface{}{Ref("PubliclyRoutableSubnetID")},
+				"SecurityGroups": []interface{}{Ref("LoadBalancerSecurityGroup")},
+				"HealthCheck": map[string]string{
+					"HealthyThreshold":   "2",
+					"Interval":           "30",
+					"Target":             "tcp:8080",
+					"Timeout":            "5",
+					"UnhealthyThreshold": "10",
+				},
+				"Listeners": []map[string]string{
+					map[string]string{
+						"Protocol":         "tcp",
+						"LoadBalancerPort": "80",
+						"InstanceProtocol": "tcp",
+						"InstancePort":     "8080",
+					},
+					map[string]string{
+						"Protocol":         "tcp",
+						"LoadBalancerPort": "2222",
+						"InstanceProtocol": "tcp",
+						"InstancePort":     "2222",
+					},
+				},
 			},
 		},
 	},

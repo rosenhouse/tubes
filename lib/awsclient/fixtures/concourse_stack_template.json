@@ -68,6 +68,62 @@
                         "Ref": "VPCID"
                     }
                 }
+            },
+            "LoadBalancerSecurityGroup": {
+              "Type": "AWS::EC2::SecurityGroup",
+              "Properties": {
+                "VpcId": { "Ref": "VPCID" },
+                "GroupDescription": "Concourse-LoadBalancer",
+                "SecurityGroupEgress": [],
+                "SecurityGroupIngress": [
+                  {
+                    "CidrIp": "0.0.0.0/0",
+                    "IpProtocol": "tcp",
+                    "FromPort": "80",
+                    "ToPort": "80"
+                  },
+                  {
+                    "CidrIp": "0.0.0.0/0",
+                    "IpProtocol": "tcp",
+                    "FromPort": "2222",
+                    "ToPort": "2222"
+                  },
+                  {
+                    "CidrIp": "0.0.0.0/0",
+                    "IpProtocol": "tcp",
+                    "FromPort": "443",
+                    "ToPort": "443"
+                  }
+                ]
+              }
+            },
+            "LoadBalancer": {
+              "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+              "Properties": {
+                "Subnets": [{ "Ref": "PubliclyRoutableSubnetID" }],
+                "SecurityGroups": [{ "Ref": "LoadBalancerSecurityGroup" }],
+                "HealthCheck": {
+                  "HealthyThreshold": "2",
+                  "Interval": "30",
+                  "Target": "tcp:8080",
+                  "Timeout": "5",
+                  "UnhealthyThreshold": "10"
+                },
+                "Listeners": [
+                  {
+                    "Protocol": "tcp",
+                    "LoadBalancerPort": "80",
+                    "InstanceProtocol": "tcp",
+                    "InstancePort": "8080"
+                  },
+                  {
+                    "Protocol": "tcp",
+                    "LoadBalancerPort": "2222",
+                    "InstanceProtocol": "tcp",
+                    "InstancePort": "2222"
+                  }
+                ]
+              }
             }
         },
         "Description": "Infrastructure required to bootstrap a Concourse deployment, on top of an existing Base Stack for BOSH",
@@ -89,6 +145,10 @@
                 "Type": "String",
                 "Default": "10.0.16.0/24",
                 "Description": "CIDR block for the Concourse subnet"
+            },
+            "PubliclyRoutableSubnetID": {
+                "Type": "String",
+                "Description": "ID of a publicly routable subnet, usually the BOSH subnet from the base stack"
             }
         }
 }

@@ -83,9 +83,10 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Creating keypair"))
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Looking for latest AWS NAT box AMI"))
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("ami-[a-f0-9]*"))
-			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting stack"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting base stack"))
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Stack update complete"))
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Generating BOSH init manifest"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting Concourse stack"))
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Finished"))
 			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 		})
@@ -168,7 +169,9 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		By("tearing down the environment", func() {
 			session := start("-n", stackName, "down")
 
-			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting stack"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting Concourse stack"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Delete complete"))
+			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting base stack"))
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Delete complete"))
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting keypair"))
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Finished"))
@@ -176,7 +179,24 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		})
 	})
 
-	XIt("should generate a Concourse manifest without any template placeholders", func() {
+	It("should create a CloudFormation stack for the BOSH director", func() {
+		Expect(fakeAWS.CloudFormation.Stacks).To(HaveLen(0))
+		session := start("-n", stackName, "up")
+
+		Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting base stack"))
+		Expect(*fakeAWS.CloudFormation.Stacks[0].StackName).To(Equal(stackName))
+		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+	})
+
+	It("should create a CloudFormation stack for Concourse", func() {
+		session := start("-n", stackName, "up")
+		Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting Concourse stack"))
+		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+		Expect(fakeAWS.CloudFormation.Stacks).To(HaveLen(2))
+		Expect(*fakeAWS.CloudFormation.Stacks[1].StackName).To(Equal(stackName + "-concourse"))
+	})
+
+	It("should generate a Concourse manifest without any template placeholders", func() {
 		session := start("-n", stackName, "up")
 		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 

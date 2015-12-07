@@ -91,27 +91,38 @@ func (f *FakeCloudFormation) DescribeStackResources(input *cloudformation.Descri
 		return nil, aws_enemy.CloudFormation{}.DescribeStackResources_StackMissingError(stackName)
 	}
 
+	const stackID = "arn:aws:cloudformation:us-west-2:123456789012:stack/MyProductionStack/abc9dbf0-43c2-11e3-a6e8-50fa526be49c"
 	return &cloudformation.DescribeStackResourcesOutput{
 		StackResources: []*cloudformation.StackResource{
 			&cloudformation.StackResource{
 				LogicalResourceId:  aws.String("BOSHSubnet"),
 				PhysicalResourceId: aws.String("subnet-12345"),
-				StackId:            aws.String("arn:aws:cloudformation:us-west-2:123456789012:stack/MyProductionStack/abc9dbf0-43c2-11e3-a6e8-50fa526be49c"),
+				StackId:            aws.String(stackID),
 			},
 			&cloudformation.StackResource{
 				LogicalResourceId:  aws.String("BOSHSecurityGroup"),
 				PhysicalResourceId: aws.String("sg-1234"),
-				StackId:            aws.String("arn:aws:cloudformation:us-west-2:123456789012:stack/MyProductionStack/abc9dbf0-43c2-11e3-a6e8-50fa526be49c"),
+				StackId:            aws.String(stackID),
 			},
 			&cloudformation.StackResource{
 				LogicalResourceId:  aws.String("MicroEIP"),
 				PhysicalResourceId: aws.String("192.168.12.13"),
-				StackId:            aws.String("arn:aws:cloudformation:us-west-2:123456789012:stack/MyProductionStack/abc9dbf0-43c2-11e3-a6e8-50fa526be49c"),
+				StackId:            aws.String(stackID),
 			},
 			&cloudformation.StackResource{
 				LogicalResourceId:  aws.String("BOSHDirectorUser"),
 				PhysicalResourceId: aws.String("some-iam-user"),
-				StackId:            aws.String("arn:aws:cloudformation:us-west-2:123456789012:stack/MyProductionStack/abc9dbf0-43c2-11e3-a6e8-50fa526be49c"),
+				StackId:            aws.String(stackID),
+			},
+			&cloudformation.StackResource{
+				LogicalResourceId:  aws.String("NATInstance"),
+				PhysicalResourceId: aws.String("some-nat-instance-id"),
+				StackId:            aws.String(stackID),
+			},
+			&cloudformation.StackResource{
+				LogicalResourceId:  aws.String("VPC"),
+				PhysicalResourceId: aws.String("some-vpc-id"),
+				StackId:            aws.String(stackID),
 			},
 		},
 	}, nil

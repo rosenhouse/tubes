@@ -10,6 +10,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/rosenhouse/tubes/application"
 	"github.com/rosenhouse/tubes/lib/awsclient"
+	"github.com/rosenhouse/tubes/mocks"
 )
 
 var _ = Describe("Up", func() {
@@ -17,8 +18,11 @@ var _ = Describe("Up", func() {
 		awsClient.GetLatestNATBoxAMIIDCall.Returns.AMIID = "some-nat-box-ami-id"
 		awsClient.GetBaseStackResourcesCall.Returns.Resources =
 			awsclient.BaseStackResources{
-				AccountID: "ping pong",
-				BOSHUser:  "some-bosh-user",
+				AccountID:     "ping pong",
+				BOSHUser:      "some-bosh-user",
+				NATInstanceID: "some-nat-box-instance-id",
+				VPCID:         "some-vpc-id",
+				BOSHSubnetID:  "some-bosh-subnet-id",
 			}
 		awsClient.CreateAccessKeyCall.Returns.AccessKey = "some-access-key"
 		awsClient.CreateAccessKeyCall.Returns.SecretKey = "some-secret-key"
@@ -28,6 +32,12 @@ var _ = Describe("Up", func() {
 			f.DBPassword = "some-db-password"
 			return nil
 		}
+		awsClient.GetStackResourcesCalls = make([]mocks.GetStackResourcesCall, 1)
+		awsClient.GetStackResourcesCalls[0].Returns.Resources = map[string]string{
+			"ConcourseSecurityGroup": "some-concourse-security-group-id",
+			"ConcourseSubnet":        "some-concourse-subnet-id",
+			"LoadBalancer":           "some-concourse-elb",
+		}
 	})
 
 	It("should boot the base stack using the latest NAT ID", func() {
@@ -36,26 +46,26 @@ var _ = Describe("Up", func() {
 		Expect(logBuffer).To(gbytes.Say("Creating keypair"))
 		Expect(logBuffer).To(gbytes.Say("Looking for latest AWS NAT box AMI..."))
 		Expect(logBuffer).To(gbytes.Say("Latest NAT box AMI is \"some-nat-box-ami-id\""))
-		Expect(logBuffer).To(gbytes.Say("Upserting stack.  Check CloudFormation console for details."))
+		Expect(logBuffer).To(gbytes.Say("Upserting base stack.  Check CloudFormation console for details."))
 		Expect(logBuffer).To(gbytes.Say("Stack update complete"))
 		Expect(logBuffer).To(gbytes.Say("Generating BOSH init manifest"))
 		Expect(logBuffer).To(gbytes.Say("Downloading the concourse manifest from " + app.ConcourseTemplateURL))
 		Expect(logBuffer).To(gbytes.Say("Generating the concourse manifest"))
 		Expect(logBuffer).To(gbytes.Say("Finished"))
 
-		Expect(awsClient.UpsertStackCall.Receives.StackName).To(Equal(stackName))
-		Expect(awsClient.UpsertStackCall.Receives.Template).To(Equal(awsclient.BaseStackTemplate.String()))
-		Expect(awsClient.UpsertStackCall.Receives.Parameters).To(Equal(map[string]string{
+		Expect(awsClient.UpsertStackCalls[0].Receives.StackName).To(Equal(stackName))
+		Expect(awsClient.UpsertStackCalls[0].Receives.Template).To(Equal(awsclient.BaseStackTemplate.String()))
+		Expect(awsClient.UpsertStackCalls[0].Receives.Parameters).To(Equal(map[string]string{
 			"NATInstanceAMI": "some-nat-box-ami-id",
 			"KeyName":        stackName,
 		}))
 	})
 
-	It("should wait for the stack to boot", func() {
+	It("should wait for the base stack to boot", func() {
 		Expect(app.Boot(stackName)).To(Succeed())
 
-		Expect(awsClient.WaitForStackCall.Receives.StackName).To(Equal(stackName))
-		Expect(awsClient.WaitForStackCall.Receives.Pundit).To(Equal(awsclient.CloudFormationUpsertPundit{}))
+		Expect(awsClient.WaitForStackCalls[0].Receives.StackName).To(Equal(stackName))
+		Expect(awsClient.WaitForStackCalls[0].Receives.Pundit).To(Equal(awsclient.CloudFormationUpsertPundit{}))
 	})
 
 	It("should create a new ssh keypair", func() {
@@ -104,6 +114,40 @@ var _ = Describe("Up", func() {
 		))
 	})
 
+	It("should upsert the Concourse cloudformation stack", func() {
+		Expect(app.Boot(stackName)).To(Succeed())
+
+		Expect(logBuffer).To(gbytes.Say("Upserting base stack.  Check CloudFormation console for details."))
+		Expect(logBuffer).To(gbytes.Say("Stack update complete"))
+		Expect(logBuffer).To(gbytes.Say("Upserting Concourse stack.  Check CloudFormation console for details."))
+		Expect(logBuffer).To(gbytes.Say("Stack update complete"))
+		Expect(logBuffer).To(gbytes.Say("Retrieving resource ids"))
+		Expect(logBuffer).To(gbytes.Say("Generating the concourse manifest"))
+		Expect(logBuffer).To(gbytes.Say("Finished"))
+
+		Expect(awsClient.UpsertStackCallCount).To(Equal(2))
+		Expect(awsClient.UpsertStackCalls[1].Receives.StackName).To(Equal(stackName + "-concourse"))
+		Expect(awsClient.UpsertStackCalls[1].Receives.Template).To(Equal(awsclient.ConcourseStackTemplate.String()))
+		Expect(awsClient.UpsertStackCalls[1].Receives.Parameters).To(Equal(map[string]string{
+			"VPCID":                    "some-vpc-id",
+			"NATInstance":              "some-nat-box-instance-id",
+			"PubliclyRoutableSubnetID": "some-bosh-subnet-id",
+		}))
+	})
+
+	It("should wait for the Concourse stack to boot", func() {
+		Expect(app.Boot(stackName)).To(Succeed())
+
+		Expect(awsClient.WaitForStackCallCount).To(Equal(2))
+		Expect(awsClient.WaitForStackCalls[1].Receives.StackName).To(Equal(stackName + "-concourse"))
+		Expect(awsClient.WaitForStackCalls[1].Receives.Pundit).To(Equal(awsclient.CloudFormationUpsertPundit{}))
+	})
+
+	It("should get the Concourse stack resources", func() {
+		Expect(app.Boot(stackName)).To(Succeed())
+		Expect(awsClient.GetStackResourcesCalls[0].Receives.StackName).To(Equal(stackName + "-concourse"))
+	})
+
 	It("should get the concourse manifest template", func() {
 		manifestTemplate := fmt.Sprintf("some-manifest-bytes-%x", rand.Int31())
 		httpClient.GetCall.Returns.Body = []byte(manifestTemplate + " REPLACE_WITH_AVAILABILITY_ZONE ")
@@ -114,7 +158,7 @@ var _ = Describe("Up", func() {
 		Expect(httpClient.GetCall.Receives.Path).To(Equal(app.ConcourseTemplateURL))
 	})
 
-	It("should replace all placeholders in the template", func() {
+	It("should replace all placeholders in the concourse manifest template", func() {
 		httpClient.GetCall.Returns.Body = []byte(" REPLACE_WITH_AVAILABILITY_ZONE" +
 			" REPLACE_WITH_UUID" +
 			" REPLACE_WITH_DB_PASSWORD" +
@@ -123,21 +167,25 @@ var _ = Describe("Up", func() {
 			" REPLACE_WITH_WEB_ELB_NAME")
 		awsClient.GetBaseStackResourcesCall.Returns.Resources.AWSRegion = "some-region"
 		Expect(app.Boot(stackName)).To(Succeed())
-		Expect(configStore.Values["concourse.yml"]).NotTo(ContainSubstring("REPLACE_WITH_AVAILABILITY_ZONE"))
+		Expect(configStore.Values["concourse.yml"]).NotTo(ContainSubstring("REPLACE_WITH_"))
 	})
 
-	It("should replace placeholders with the correct values ", func() {
+	It("should replace placeholders n the concourse manifest template with the correct values", func() {
 		httpClient.GetCall.Returns.Body = []byte(
 			"availability_zone: &az REPLACE_WITH_AVAILABILITY_ZONE" +
 				" password: REPLACE_WITH_DB_PASSWORD" +
-				" REPLACE_WITH_UUID" +
-				" REPLACE_WITH_INTERNAL_SECURITY_GROUP_NAME" +
-				" REPLACE_WITH_INTERNAL_SUBNET" +
-				" REPLACE_WITH_WEB_ELB_NAME")
+				" director_uuid: REPLACE_WITH_UUID" +
+				" security_groups: [REPLACE_WITH_INTERNAL_SECURITY_GROUP_NAME]" +
+				" subnet: REPLACE_WITH_INTERNAL_SUBNET" +
+				" elbs: [REPLACE_WITH_WEB_ELB_NAME]")
 		awsClient.GetBaseStackResourcesCall.Returns.Resources.AWSRegion = "some-region"
 		Expect(app.Boot(stackName)).To(Succeed())
 		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("availability_zone: &az some-region"))
 		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("password: some-db-password"))
+		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("security_groups: [some-concourse-security-group-id]"))
+		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("subnet: some-concourse-subnet"))
+		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("elbs: [some-concourse-elb]"))
+		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("director_uuid: YOUR_DIRECTOR_UUID_HERE"))
 	})
 
 	Context("when the stackName contains invalid characters", func() {
@@ -170,8 +218,7 @@ var _ = Describe("Up", func() {
 			awsClient.GetLatestNATBoxAMIIDCall.Returns.Error = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
-			Expect(awsClient.UpsertStackCall.Receives.StackName).To(BeEmpty())
-			Expect(awsClient.WaitForStackCall.Receives.StackName).To(BeEmpty())
+			Expect(awsClient.UpsertStackCalls).To(HaveLen(0))
 		})
 	})
 
@@ -180,7 +227,7 @@ var _ = Describe("Up", func() {
 			awsClient.CreateKeyPairCall.Returns.Error = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
-			Expect(awsClient.UpsertStackCall.Receives.StackName).To(BeEmpty())
+			Expect(awsClient.UpsertStackCalls).To(HaveLen(0))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Looking for latest AWS NAT box AMI"))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
@@ -191,25 +238,27 @@ var _ = Describe("Up", func() {
 			configStore.Errors["ssh-key"] = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
-			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Upserting stack"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Upserting base stack"))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
 	})
 
-	Context("when upserting the stack errors", func() {
+	Context("when upserting the base stack returns an error", func() {
 		It("should immediately return the error", func() {
-			awsClient.UpsertStackCall.Returns.Error = errors.New("some error")
+			awsClient.UpsertStackCalls = make([]mocks.UpsertStackCall, 1)
+			awsClient.UpsertStackCalls[0].Returns.Error = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
-			Expect(awsClient.WaitForStackCall.Receives.StackName).To(BeEmpty())
+			Expect(awsClient.WaitForStackCalls).To(BeEmpty())
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Stack update complete"))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
 	})
 
-	Context("when waiting for the stack errors", func() {
+	Context("when waiting for the base stack returns an error", func() {
 		It("should return the error", func() {
-			awsClient.WaitForStackCall.Returns.Error = errors.New("some error")
+			awsClient.WaitForStackCalls = make([]mocks.WaitForStackCall, 1)
+			awsClient.WaitForStackCalls[0].Returns.Error = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
 
@@ -251,14 +300,34 @@ var _ = Describe("Up", func() {
 		})
 	})
 
-	Context("When downloading the concourse manifest template returns an error", func() {
+	Context("when downloading the concourse manifest template returns an error", func() {
 		It("should return an error", func() {
 			httpClient.GetCall.Returns.Error = errors.New("Bad Request")
 
 			Expect(app.Boot(stackName)).To(MatchError("Bad Request"))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Generating the concourse manifest"))
 		})
+	})
 
+	Context("when upserting the Concourse stack returns an error", func() {
+		It("should immediately return the error", func() {
+			awsClient.UpsertStackCalls = make([]mocks.UpsertStackCall, 2)
+			awsClient.UpsertStackCalls[1].Returns.Error = errors.New("some error")
+
+			Expect(app.Boot(stackName)).To(MatchError("some error"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
+		})
+	})
+
+	Context("when waiting for the Concourse stack returns an error", func() {
+		It("should return the error", func() {
+			awsClient.WaitForStackCalls = make([]mocks.WaitForStackCall, 2)
+			awsClient.WaitForStackCalls[1].Returns.Error = errors.New("some error")
+
+			Expect(app.Boot(stackName)).To(MatchError("some error"))
+
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
+		})
 	})
 
 	Context("when storing the Concourse manifest yaml fails", func() {

@@ -5,8 +5,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/onsi/gomega/gbytes"
 	"github.com/rosenhouse/tubes/lib/awsclient"
+	"github.com/rosenhouse/tubes/mocks"
 )
 
 var _ = Describe("Destroy", func() {
@@ -27,28 +29,36 @@ var _ = Describe("Destroy", func() {
 		Expect(awsClient.DeleteAccessKeyCall.Receives.AccessKey).To(Equal("some-access-key"))
 	})
 
-	It("should delete the stack", func() {
+	It("should delete the Concourse stack and the base stack", func() {
 		Expect(app.Destroy(stackName)).To(Succeed())
-
-		Expect(awsClient.DeleteStackCall.Receives.StackName).To(Equal(stackName))
 
 		Expect(logBuffer).To(gbytes.Say("Inspecting stack"))
 		Expect(logBuffer).To(gbytes.Say("Inspecting user"))
 		Expect(logBuffer).To(gbytes.Say("Deleting access keys"))
-		Expect(logBuffer).To(gbytes.Say("Deleting stack"))
+		Expect(logBuffer).To(gbytes.Say("Deleting Concourse stack"))
+		Expect(awsClient.DeleteStackCalls[0].Receives.StackName).To(Equal(stackName + "-concourse"))
+		Expect(logBuffer).To(gbytes.Say("Delete complete"))
+		Expect(logBuffer).To(gbytes.Say("Deleting base stack"))
+		Expect(awsClient.DeleteStackCalls[1].Receives.StackName).To(Equal(stackName))
 		Expect(logBuffer).To(gbytes.Say("Delete complete"))
 		Expect(logBuffer).To(gbytes.Say("Deleting keypair"))
 		Expect(logBuffer).To(gbytes.Say("Finished"))
 	})
-
-	It("should wait for the stack be fully deleted", func() {
+	It("should wait for the Concourse stack to be fully deleted", func() {
 		Expect(app.Destroy(stackName)).To(Succeed())
 
-		Expect(awsClient.WaitForStackCall.Receives.StackName).To(Equal(stackName))
-		Expect(awsClient.WaitForStackCall.Receives.Pundit).To(Equal(awsclient.CloudFormationDeletePundit{}))
+		Expect(awsClient.WaitForStackCalls[0].Receives.StackName).To(Equal(stackName + "-concourse"))
+		Expect(awsClient.WaitForStackCalls[0].Receives.Pundit).To(Equal(awsclient.CloudFormationDeletePundit{}))
 	})
 
-	It("should delete the ssk keypair", func() {
+	It("should wait for the base stack to be fully deleted", func() {
+		Expect(app.Destroy(stackName)).To(Succeed())
+
+		Expect(awsClient.WaitForStackCalls[1].Receives.StackName).To(Equal(stackName))
+		Expect(awsClient.WaitForStackCalls[1].Receives.Pundit).To(Equal(awsclient.CloudFormationDeletePundit{}))
+	})
+
+	It("should delete the ssh keypair", func() {
 		Expect(app.Destroy(stackName)).To(Succeed())
 
 		Expect(awsClient.DeleteKeyPairCall.Receives.StackName).To(Equal(stackName))
@@ -79,18 +89,30 @@ var _ = Describe("Destroy", func() {
 		})
 	})
 
-	Context("when deleting the stack errors", func() {
+	Context("when deleting the Concourse stack errors", func() {
 		It("should immediately return the error", func() {
-			awsClient.DeleteStackCall.Returns.Error = errors.New("some error")
+			awsClient.DeleteStackCalls = make([]mocks.DeleteStackCall, 1)
+			awsClient.DeleteStackCalls[0].Returns.Error = errors.New("some error")
 
 			Expect(app.Destroy(stackName)).To(MatchError("some error"))
-			Expect(awsClient.WaitForStackCall.Receives.StackName).To(BeEmpty())
+			Expect(awsClient.WaitForStackCalls).To(BeEmpty())
 		})
 	})
 
-	Context("when waiting for the stack errors", func() {
+	Context("when deleting the base stack errors", func() {
+		It("should immediately return the error", func() {
+			awsClient.DeleteStackCalls = make([]mocks.DeleteStackCall, 2)
+			awsClient.DeleteStackCalls[1].Returns.Error = errors.New("some error")
+
+			Expect(app.Destroy(stackName)).To(MatchError("some error"))
+			Expect(awsClient.WaitForStackCalls).To(HaveLen(1))
+		})
+	})
+
+	Context("when waiting for the base stack errors", func() {
 		It("should return the error", func() {
-			awsClient.WaitForStackCall.Returns.Error = errors.New("some error")
+			awsClient.WaitForStackCalls = make([]mocks.WaitForStackCall, 1)
+			awsClient.WaitForStackCalls[0].Returns.Error = errors.New("some error")
 
 			Expect(app.Destroy(stackName)).To(MatchError("some error"))
 		})

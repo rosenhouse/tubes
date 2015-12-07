@@ -14,6 +14,7 @@ type awsClient interface {
 	CreateKeyPair(stackName string) (string, error)
 	DeleteKeyPair(stackName string) error
 	GetBaseStackResources(stackName string) (awsclient.BaseStackResources, error)
+	GetStackResources(stackName string) (map[string]string, error)
 	CreateAccessKey(userName string) (string, string, error)
 	DeleteAccessKey(userName, accessKey string) error
 	ListAccessKeys(userName string) ([]string, error)

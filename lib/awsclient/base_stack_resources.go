@@ -17,6 +17,8 @@ type BaseStackResources struct {
 	AccountID         string
 	BOSHUser          string
 	AWSRegion         string
+	NATInstanceID     string
+	VPCID             string
 }
 
 func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, error) {
@@ -55,6 +57,14 @@ func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, er
 	resources.BOSHUser, ok = mapping["BOSHDirectorUser"]
 	if !ok {
 		return resources, errors.New("missing stack resource BOSHDirectorUser")
+	}
+	resources.NATInstanceID, ok = mapping["NATInstance"]
+	if !ok {
+		return resources, errors.New("missing stack resource NATInstance")
+	}
+	resources.VPCID, ok = mapping["VPC"]
+	if !ok {
+		return resources, errors.New("missing stack resource VPC")
 	}
 
 	dsOutput, err := c.EC2.DescribeSubnets(&ec2.DescribeSubnetsInput{

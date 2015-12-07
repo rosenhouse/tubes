@@ -63,7 +63,7 @@ var _ = Describe("The CLI", func() {
 
 		It("should support basic environment manipulation", func() { // slow happy path
 			const NormalTimeout = "10s"
-			const StackChangeTimeout = "4m"
+			const StackChangeTimeout = "6m"
 
 			By("booting a fresh environment", func() {
 				session := start(envVars, "-n", stackName, "up")
@@ -71,8 +71,11 @@ var _ = Describe("The CLI", func() {
 				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Creating keypair"))
 				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Looking for latest AWS NAT box AMI"))
 				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("ami-[a-f0-9]*"))
-				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting stack"))
-				Eventually(session.Err, StackChangeTimeout).Should(gbytes.Say("Finished"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting base stack"))
+				Eventually(session.Err, StackChangeTimeout).Should(gbytes.Say("Stack update complete"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting Concourse stack"))
+				Eventually(session.Err, StackChangeTimeout).Should(gbytes.Say("Stack update complete"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Finished"))
 				Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 			})
 
@@ -117,7 +120,9 @@ var _ = Describe("The CLI", func() {
 			By("tearing down the environment", func() {
 				session := start(envVars, "-n", stackName, "down")
 
-				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting stack"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting Concourse stack"))
+				Eventually(session.Err, StackChangeTimeout).Should(gbytes.Say("Delete complete"))
+				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting base stack"))
 				Eventually(session.Err, StackChangeTimeout).Should(gbytes.Say("Delete complete"))
 				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Deleting keypair"))
 				Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Finished"))

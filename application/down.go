@@ -23,7 +23,19 @@ func (a *Application) Destroy(stackName string) error {
 		}
 	}
 
-	a.Logger.Println("Deleting stack")
+	a.Logger.Println("Deleting Concourse stack")
+	err = a.AWSClient.DeleteStack(stackName + "-concourse")
+	if err != nil {
+		return err
+	}
+
+	err = a.AWSClient.WaitForStack(stackName+"-concourse", awsclient.CloudFormationDeletePundit{})
+	if err != nil {
+		return err
+	}
+	a.Logger.Printf("Delete complete")
+
+	a.Logger.Println("Deleting base stack")
 	err = a.AWSClient.DeleteStack(stackName)
 	if err != nil {
 		return err

@@ -51,7 +51,7 @@ func (a *Application) Boot(stackName string) error {
 		"KeyName":        stackName,
 	}
 	templateJSON := awsclient.BaseStackTemplate.String()
-	a.Logger.Println("Upserting stack.  Check CloudFormation console for details.")
+	a.Logger.Println("Upserting base stack.  Check CloudFormation console for details.")
 	err = a.AWSClient.UpsertStack(stackName, templateJSON, parameters)
 	if err != nil {
 		return err
@@ -92,9 +92,36 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 
+	concourseTemplateJSON := awsclient.ConcourseStackTemplate.String()
+	a.Logger.Println("Upserting Concourse stack.  Check CloudFormation console for details.")
+	err = a.AWSClient.UpsertStack(
+		stackName+"-concourse", concourseTemplateJSON, map[string]string{
+			"VPCID":                    baseStackResources.VPCID,
+			"NATInstance":              baseStackResources.NATInstanceID,
+			"PubliclyRoutableSubnetID": baseStackResources.BOSHSubnetID,
+		})
+	if err != nil {
+		return err
+	}
+
+	err = a.AWSClient.WaitForStack(stackName+"-concourse", awsclient.CloudFormationUpsertPundit{})
+	if err != nil {
+		return err
+	}
+	a.Logger.Println("Stack update complete")
+	a.Logger.Println("Retrieving resource ids")
+	concourseStackResources, err := a.AWSClient.GetStackResources(stackName + "-concourse")
+	if err != nil {
+		panic(err)
+	}
+
 	a.Logger.Println("Generating the concourse manifest")
 
 	concourseCredentials := ConcourseCredentials{}
+	err = a.CredentialsGenerator.Fill(&concourseCredentials)
+	if err != nil {
+		return err
+	}
 
 	filledInConcourseTemplate := strings.Replace(
 		string(concourseManifestYAMLTemplate),
@@ -102,14 +129,29 @@ func (a *Application) Boot(stackName string) error {
 		baseStackResources.AWSRegion,
 		-1)
 
-	err = a.CredentialsGenerator.Fill(&concourseCredentials)
-	if err != nil {
-		return err
-	}
-
 	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
 		"REPLACE_WITH_DB_PASSWORD",
 		concourseCredentials.DBPassword,
+		-1)
+
+	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
+		"REPLACE_WITH_INTERNAL_SECURITY_GROUP_NAME",
+		concourseStackResources["ConcourseSecurityGroup"],
+		-1)
+
+	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
+		"REPLACE_WITH_INTERNAL_SUBNET",
+		concourseStackResources["ConcourseSubnet"],
+		-1)
+
+	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
+		"REPLACE_WITH_WEB_ELB_NAME",
+		concourseStackResources["LoadBalancer"],
+		-1)
+
+	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
+		"REPLACE_WITH_UUID",
+		"YOUR_DIRECTOR_UUID_HERE",
 		-1)
 
 	err = a.ConfigStore.Set("concourse.yml", []byte(filledInConcourseTemplate))

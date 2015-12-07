@@ -103,7 +103,7 @@ func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackR
 
 	manifest, err := b.DirectorManifestGenerator.Generate(config)
 	if err != nil {
-		return nil, err // not tested
+		return nil, err
 	}
 
 	return []byte(manifest.String()), nil

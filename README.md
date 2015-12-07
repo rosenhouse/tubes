@@ -48,16 +48,42 @@ Pull requests are welcome.  Here's how to get started:
 
 
 ## What it does today
+Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are still several manual steps.  Automating those is a high priority.
 
-*Given* I've set my `AWS_*` environment variables on an empty AWS account
-
-*When* I run 
- 
+1. Install for easy access
  ```bash
- tubes -n my-environment up && bosh-init deploy environments/my-environment/director.yml
+ go install github.com/rosenhouse/tubes
+ ```
+ 
+2. Set your AWS environment variables
+ ```bash
+ AWS_DEFAULT_REGION=us-west-2
+ AWS_ACCESS_KEY_ID=some-key
+ AWS_SECRET_ACCESS_KEY=some-secret
  ```
 
-*Then* I get a [fully-operational](https://www.google.com/search?q=fully+operational&safe=active&source=lnms&tbm=isch) BOSH director on AWS
+3. Boot a new environment named `my-environment`
+ ```bash
+ tubes -n my-environment up
+ 
+ ```
+ This boots 2 CloudFormation stacks, a "base" stack to support a BOSH director, and a "Concourse" stack with dedicated subnet and Elastic LoadBalancer.  It generates deployment manifests in `$PWD/environments/my-environment`
+ 
+4. Manually `bosh-init` the director
+ ```bash
+ bosh-init deploy environments/my-environment/director.yml
+ bosh target $(tubes -n my-environment show --bosh-ip)
+ bosh status --uuid
+ ```
+
+5. Manually edit the partially-generated Concourse deployment manifest
+ ```bash
+ vim environments/my-environment/concourse.yml  # add the UUID at the top
+ ```
+ 
+5. Manually lookup the latest versions of Concourse & Garden Linux release, upload to the director, and deploy Concourse.
+
+
 
 ## What's in progress
 - Deploy Concourse

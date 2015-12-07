@@ -184,8 +184,9 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		session := start("-n", stackName, "up")
 
 		Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting base stack"))
-		Expect(*fakeAWS.CloudFormation.Stacks[0].StackName).To(Equal(stackName))
+		Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Stack update complete"))
 		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+		Expect(*fakeAWS.CloudFormation.Stacks[0].StackName).To(Equal(stackName))
 	})
 
 	It("should create a CloudFormation stack for Concourse", func() {

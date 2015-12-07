@@ -84,15 +84,13 @@ Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are s
 5. Manually lookup the latest versions of Concourse & Garden Linux release, upload to the director, and deploy Concourse.
 
 
-
-## What's in progress
-- Deploy Concourse
- - Create IaaS resources required by Concourse (ELB + separate network) as a separate CloudFormation stack
- - Generate a Concourse deployment manifest
-
 ## What's next (maybe)
+- Automate more of the Concourse deployment workflow
+- Refactor manifest generation code, there's lots of incidental complexity in there at the moment
+- Refactor the integration tests for better readability
 - Idempotent upsert, using data in state directory (see below)
 - Optional hosted zone: DNS for everything
+- Add SSL for Concourse, maybe with Let's Encrypt?
 - Feature to rotate credentials?
 - Deploy CF, somehow?
 - Keep a log somewhere, for auditing?

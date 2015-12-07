@@ -117,7 +117,7 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 
 			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 
-			Expect(session.Out.Contents()).To(Equal([]byte("192.168.12.13\n")))
+			Expect(session.Out.Contents()).To(Equal([]byte("192.168.12.13")))
 		})
 
 		By("supporting an explicit state directory, rather than the implicit subdirectory of the working directory", func() {

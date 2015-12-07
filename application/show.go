@@ -28,7 +28,7 @@ func (a *Application) Show(stackName string, options ShowOptions) error {
 		if err != nil {
 			return err
 		}
-		val = append(val, byte('\n'))
+		val = append(val)
 		_, err = a.ResultWriter.Write(val)
 		if err != nil {
 			return err

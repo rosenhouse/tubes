@@ -51,7 +51,7 @@ var _ = Describe("Show", func() {
 
 			Expect(app.Show(stackName, options)).To(Succeed())
 
-			Expect(resultBuffer.Contents()).To(Equal([]byte("some ip address\n")))
+			Expect(resultBuffer.Contents()).To(Equal([]byte("some ip address")))
 		})
 
 		Context("when the config store get errors", func() {

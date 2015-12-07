@@ -11,16 +11,17 @@ type ManifestBuilder struct {
 			SecretKey string
 		}
 		Returns struct {
-			ManifestYAML []byte
-			Error        error
+			ManifestYAML  []byte
+			AdminPassword string
+			Error         error
 		}
 	}
 }
 
-func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackResources, accessKey, secretKey string) ([]byte, error) {
+func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackResources, accessKey, secretKey string) ([]byte, string, error) {
 	b.BuildCall.Receives.StackName = stackName
 	b.BuildCall.Receives.Resources = resources
 	b.BuildCall.Receives.AccessKey = accessKey
 	b.BuildCall.Receives.SecretKey = secretKey
-	return b.BuildCall.Returns.ManifestYAML, b.BuildCall.Returns.Error
+	return b.BuildCall.Returns.ManifestYAML, b.BuildCall.Returns.AdminPassword, b.BuildCall.Returns.Error
 }

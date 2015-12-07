@@ -81,7 +81,7 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 
-	manifestYAML, err := a.ManifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
+	manifestYAML, _, err := a.ManifestBuilder.Build(stackName, baseStackResources, accessKey, secretKey)
 	if err != nil {
 		return err
 	}

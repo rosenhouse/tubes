@@ -34,7 +34,7 @@ type configStore interface {
 }
 
 type manifestBuilder interface {
-	Build(name string, resources awsclient.BaseStackResources, accessKey, secretKey string) ([]byte, error)
+	Build(name string, resources awsclient.BaseStackResources, accessKey, secretKey string) ([]byte, string, error)
 }
 
 type httpClient interface {

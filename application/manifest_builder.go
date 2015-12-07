@@ -66,12 +66,12 @@ func (b *ManifestBuilder) getAWSNetwork(resources awsclient.BaseStackResources) 
 	}
 }
 
-func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackResources, accessKey, secretKey string) ([]byte, error) {
+func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackResources, accessKey, secretKey string) ([]byte, string, error) {
 	if accessKey == "" {
-		return nil, fmt.Errorf("missing access key")
+		return nil, "", fmt.Errorf("missing access key")
 	}
 	if secretKey == "" {
-		return nil, fmt.Errorf("missing secret key")
+		return nil, "", fmt.Errorf("missing secret key")
 	}
 
 	config := director.DirectorConfig{}
@@ -79,17 +79,17 @@ func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackR
 	var err error
 	config.Software, err = b.getLatestSoftware()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	err = b.CredentialsGenerator.Fill(&config.Credentials)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	config.InternalIP, err = b.getInternalIP(resources.BOSHSubnetCIDR)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	config.AWSNetwork = b.getAWSNetwork(resources)
@@ -103,8 +103,8 @@ func (b *ManifestBuilder) Build(stackName string, resources awsclient.BaseStackR
 
 	manifest, err := b.DirectorManifestGenerator.Generate(config)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return []byte(manifest.String()), nil
+	return []byte(manifest.String()), config.Credentials.Admin, nil
 }

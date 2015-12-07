@@ -68,6 +68,12 @@ func (a *Application) Boot(stackName string) error {
 	if err != nil {
 		return err
 	}
+
+	err = a.ConfigStore.Set("bosh-ip", []byte(baseStackResources.BOSHElasticIP))
+	if err != nil {
+		return err
+	}
+
 	a.Logger.Println("Generating BOSH init manifest")
 
 	accessKey, secretKey, err := a.AWSClient.CreateAccessKey(baseStackResources.BOSHUser)

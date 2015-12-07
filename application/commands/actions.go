@@ -1,5 +1,7 @@
 package commands
 
+import "github.com/rosenhouse/tubes/application"
+
 func (c *Up) Execute(args []string) error {
 	app, err := c.InitApp(args)
 	if err != nil {
@@ -23,5 +25,8 @@ func (c *Show) Execute(args []string) error {
 	if err != nil {
 		return err
 	}
-	return app.Show(c.Name)
+	return app.Show(c.Name, application.ShowOptions{
+		SSHKey: c.SSHKey,
+		BoshIP: c.BoshIP,
+	})
 }

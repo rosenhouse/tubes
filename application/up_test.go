@@ -23,6 +23,7 @@ var _ = Describe("Up", func() {
 				NATInstanceID: "some-nat-box-instance-id",
 				VPCID:         "some-vpc-id",
 				BOSHSubnetID:  "some-bosh-subnet-id",
+				BOSHElasticIP: "some-elastic-ip",
 			}
 		awsClient.CreateAccessKeyCall.Returns.AccessKey = "some-access-key"
 		awsClient.CreateAccessKeyCall.Returns.SecretKey = "some-secret-key"
@@ -38,6 +39,21 @@ var _ = Describe("Up", func() {
 			"ConcourseSubnet":        "some-concourse-subnet-id",
 			"LoadBalancer":           "some-concourse-elb",
 		}
+	})
+
+	It("should create a new ssh keypair", func() {
+		Expect(app.Boot(stackName)).To(Succeed())
+
+		Expect(awsClient.CreateKeyPairCall.Receives.StackName).To(Equal(stackName))
+	})
+
+	It("should store the ssh keypair in the config store", func() {
+		awsClient.CreateKeyPairCall.Returns.KeyPair = "some pem bytes"
+		Expect(app.Boot(stackName)).To(Succeed())
+
+		Expect(configStore.Values).To(HaveKeyWithValue(
+			"ssh-key",
+			[]byte("some pem bytes")))
 	})
 
 	It("should boot the base stack using the latest NAT ID", func() {
@@ -68,24 +84,17 @@ var _ = Describe("Up", func() {
 		Expect(awsClient.WaitForStackCalls[0].Receives.Pundit).To(Equal(awsclient.CloudFormationUpsertPundit{}))
 	})
 
-	It("should create a new ssh keypair", func() {
-		Expect(app.Boot(stackName)).To(Succeed())
-
-		Expect(awsClient.CreateKeyPairCall.Receives.StackName).To(Equal(stackName))
-	})
-
-	It("should store the ssh keypair in the config store", func() {
-		awsClient.CreateKeyPairCall.Returns.KeyPair = "some pem bytes"
-		Expect(app.Boot(stackName)).To(Succeed())
-
-		Expect(configStore.Values).To(HaveKeyWithValue(
-			"ssh-key",
-			[]byte("some pem bytes")))
-	})
-
 	It("should get the base stack resources", func() {
 		Expect(app.Boot(stackName)).To(Succeed())
 		Expect(awsClient.GetBaseStackResourcesCall.Receives.StackName).To(Equal(stackName))
+	})
+
+	It("should store the BOSH IP in the config store", func() {
+		Expect(app.Boot(stackName)).To(Succeed())
+
+		Expect(configStore.Values).To(HaveKeyWithValue(
+			"bosh-ip",
+			[]byte("some-elastic-ip")))
 	})
 
 	It("should create an access key for the BOSH user", func() {
@@ -272,6 +281,16 @@ var _ = Describe("Up", func() {
 			awsClient.GetBaseStackResourcesCall.Returns.Error = errors.New("boom")
 
 			Expect(app.Boot(stackName)).To(MatchError("boom"))
+		})
+	})
+
+	Context("when storing the BOSH IP fails", func() {
+		It("should return an error", func() {
+			configStore.Errors["bosh-ip"] = errors.New("some error")
+
+			Expect(app.Boot(stackName)).To(MatchError("some error"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Generating BOSH init manifest"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
 	})
 

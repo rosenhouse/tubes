@@ -31,7 +31,7 @@ var _ = Describe("Up action dependency on state directory", func() {
 		boshIOServer   *httptest.Server
 	)
 
-	const ExpectedNumFilesInStateDir = 3
+	const ExpectedNumFilesInStateDir = 4
 
 	BeforeEach(func() {
 		stackName = fmt.Sprintf("tubes-acceptance-test-%x", rand.Int())

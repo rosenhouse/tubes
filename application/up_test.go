@@ -70,7 +70,7 @@ var _ = Describe("Up", func() {
 		Expect(logBuffer).To(gbytes.Say("Generating the concourse manifest"))
 		Expect(logBuffer).To(gbytes.Say("Finished"))
 
-		Expect(awsClient.UpsertStackCalls[0].Receives.StackName).To(Equal(stackName))
+		Expect(awsClient.UpsertStackCalls[0].Receives.StackName).To(Equal(stackName + "-base"))
 		Expect(awsClient.UpsertStackCalls[0].Receives.Template).To(Equal(awsclient.BaseStackTemplate.String()))
 		Expect(awsClient.UpsertStackCalls[0].Receives.Parameters).To(Equal(map[string]string{
 			"NATInstanceAMI": "some-nat-box-ami-id",
@@ -81,13 +81,13 @@ var _ = Describe("Up", func() {
 	It("should wait for the base stack to boot", func() {
 		Expect(app.Boot(stackName)).To(Succeed())
 
-		Expect(awsClient.WaitForStackCalls[0].Receives.StackName).To(Equal(stackName))
+		Expect(awsClient.WaitForStackCalls[0].Receives.StackName).To(Equal(stackName + "-base"))
 		Expect(awsClient.WaitForStackCalls[0].Receives.Pundit).To(Equal(awsclient.CloudFormationUpsertPundit{}))
 	})
 
 	It("should get the base stack resources", func() {
 		Expect(app.Boot(stackName)).To(Succeed())
-		Expect(awsClient.GetBaseStackResourcesCall.Receives.StackName).To(Equal(stackName))
+		Expect(awsClient.GetBaseStackResourcesCall.Receives.StackName).To(Equal(stackName + "-base"))
 	})
 
 	It("should store the BOSH IP in the config store", func() {

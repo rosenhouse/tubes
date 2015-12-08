@@ -15,7 +15,7 @@ var _ = Describe("Destroy", func() {
 	It("should get the stack resources to discover the BOSH user", func() {
 		Expect(app.Destroy(stackName)).To(Succeed())
 
-		Expect(awsClient.GetBaseStackResourcesCall.Receives.StackName).To(Equal(stackName))
+		Expect(awsClient.GetBaseStackResourcesCall.Receives.StackName).To(Equal(stackName + "-base"))
 	})
 
 	It("should delete the user's access keys", func() {
@@ -39,7 +39,7 @@ var _ = Describe("Destroy", func() {
 		Expect(awsClient.DeleteStackCalls[0].Receives.StackName).To(Equal(stackName + "-concourse"))
 		Expect(logBuffer).To(gbytes.Say("Delete complete"))
 		Expect(logBuffer).To(gbytes.Say("Deleting base stack"))
-		Expect(awsClient.DeleteStackCalls[1].Receives.StackName).To(Equal(stackName))
+		Expect(awsClient.DeleteStackCalls[1].Receives.StackName).To(Equal(stackName + "-base"))
 		Expect(logBuffer).To(gbytes.Say("Delete complete"))
 		Expect(logBuffer).To(gbytes.Say("Deleting keypair"))
 		Expect(logBuffer).To(gbytes.Say("Finished"))
@@ -54,7 +54,7 @@ var _ = Describe("Destroy", func() {
 	It("should wait for the base stack to be fully deleted", func() {
 		Expect(app.Destroy(stackName)).To(Succeed())
 
-		Expect(awsClient.WaitForStackCalls[1].Receives.StackName).To(Equal(stackName))
+		Expect(awsClient.WaitForStackCalls[1].Receives.StackName).To(Equal(stackName + "-base"))
 		Expect(awsClient.WaitForStackCalls[1].Receives.Pundit).To(Equal(awsclient.CloudFormationDeletePundit{}))
 	})
 

@@ -52,19 +52,19 @@ func (a *Application) Boot(stackName string) error {
 	}
 	templateJSON := awsclient.BaseStackTemplate.String()
 	a.Logger.Println("Upserting base stack.  Check CloudFormation console for details.")
-	err = a.AWSClient.UpsertStack(stackName, templateJSON, parameters)
+	err = a.AWSClient.UpsertStack(stackName+"-base", templateJSON, parameters)
 	if err != nil {
 		return err
 	}
 
-	err = a.AWSClient.WaitForStack(stackName, awsclient.CloudFormationUpsertPundit{})
+	err = a.AWSClient.WaitForStack(stackName+"-base", awsclient.CloudFormationUpsertPundit{})
 	if err != nil {
 		return err
 	}
 	a.Logger.Println("Stack update complete")
 	a.Logger.Println("Retrieving resource ids")
 
-	baseStackResources, err := a.AWSClient.GetBaseStackResources(stackName)
+	baseStackResources, err := a.AWSClient.GetBaseStackResources(stackName + "-base")
 	if err != nil {
 		return err
 	}

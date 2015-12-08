@@ -4,7 +4,7 @@ import "github.com/rosenhouse/tubes/lib/awsclient"
 
 func (a *Application) Destroy(stackName string) error {
 	a.Logger.Println("Inspecting stack")
-	resources, err := a.AWSClient.GetBaseStackResources(stackName)
+	resources, err := a.AWSClient.GetBaseStackResources(stackName + "-base")
 	if err != nil {
 		return err
 	}
@@ -36,12 +36,12 @@ func (a *Application) Destroy(stackName string) error {
 	a.Logger.Printf("Delete complete")
 
 	a.Logger.Println("Deleting base stack")
-	err = a.AWSClient.DeleteStack(stackName)
+	err = a.AWSClient.DeleteStack(stackName + "-base")
 	if err != nil {
 		return err
 	}
 
-	err = a.AWSClient.WaitForStack(stackName, awsclient.CloudFormationDeletePundit{})
+	err = a.AWSClient.WaitForStack(stackName+"-base", awsclient.CloudFormationDeletePundit{})
 	if err != nil {
 		return err
 	}

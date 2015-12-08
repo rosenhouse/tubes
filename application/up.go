@@ -86,6 +86,16 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 
+	boshEnvLines := []string{
+		fmt.Sprintf(`export BOSH_TARGET="%s"`, baseStackResources.BOSHElasticIP),
+		fmt.Sprintf(`export BOSH_USER="%s"`, "admin"),
+		fmt.Sprintf(`export BOSH_PASSWORD="%s"`, boshPassword),
+	}
+	err = a.ConfigStore.Set("bosh-environment", []byte(strings.Join(boshEnvLines, "\n")))
+	if err != nil {
+		return err
+	}
+
 	err = a.ConfigStore.Set("director.yml", manifestYAML)
 	if err != nil {
 		return err

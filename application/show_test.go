@@ -81,6 +81,25 @@ var _ = Describe("Show", func() {
 		})
 	})
 
+	Context("when the BOSH environment option is set", func() {
+		BeforeEach(func() { options.BoshEnvironment = true })
+
+		It("should print the BOSH environment to the result writer", func() {
+			configStore.Values["bosh-environment"] = []byte("some-environment")
+
+			Expect(app.Show(stackName, options)).To(Succeed())
+
+			Expect(resultBuffer.Contents()).To(Equal([]byte("some-environment")))
+		})
+
+		Context("when the config store get errors", func() {
+			It("should return the error", func() {
+				configStore.Errors["bosh-environment"] = errors.New("some error")
+				Expect(app.Show(stackName, options)).To(MatchError("some error"))
+			})
+		})
+	})
+
 	Context("when writing the result errors", func() {
 		It("should return the error", func() {
 			options.SSHKey = true

@@ -103,6 +103,9 @@ var _ = Describe("Up action", func() {
 		By("storing the BOSH admin password on the filesystem", func() {
 			Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "bosh-password"))).To(HaveLen(12))
 		})
+		By("storing a bash script than can be sourced to get env vars", func() {
+			Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "bosh-environment"))).To(ContainSubstring("export BOSH_TARGET="))
+		})
 
 		By("storing a generated BOSH director manifest in the state directory", func() {
 			directorYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "director.yml"))

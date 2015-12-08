@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -102,6 +104,26 @@ var _ = Describe("Show action", func() {
 		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 
 		Expect(session.Out.Contents()).To(HaveLen(12))
+	})
+
+	It("should expose the bosh settings as a sourcable environment file", func() {
+		session := start("-n", stackName, "show", "--bosh-environment")
+
+		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
+
+		envFile := string(session.Out.Contents())
+		env := map[string]string{}
+
+		re := regexp.MustCompile(`^export (\S*)="(\S*)"\s*$`)
+		for _, line := range strings.Split(envFile, "\n") {
+			matches := re.FindStringSubmatch(line)
+			if len(matches) == 3 {
+				env[matches[1]] = matches[2]
+			}
+		}
+		Expect(env).To(HaveKeyWithValue("BOSH_TARGET", "192.168.12.13"))
+		Expect(env).To(HaveKeyWithValue("BOSH_USER", "admin"))
+		Expect(env).To(HaveKey("BOSH_PASSWORD"))
 	})
 
 	It("should support an explicit state directory, rather than the implicit subdirectory of the working directory", func() {

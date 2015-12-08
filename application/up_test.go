@@ -40,6 +40,7 @@ var _ = Describe("Up", func() {
 			"ConcourseSubnet":        "some-concourse-subnet-id",
 			"LoadBalancer":           "some-concourse-elb",
 		}
+		manifestBuilder.BuildCall.Returns.AdminPassword = "some-bosh-password"
 	})
 
 	It("should create a new ssh keypair", func() {
@@ -125,14 +126,22 @@ var _ = Describe("Up", func() {
 	})
 
 	It("should store the BOSH password", func() {
-		manifestBuilder.BuildCall.Returns.AdminPassword = "some-bosh-password"
-
 		Expect(app.Boot(stackName)).To(Succeed())
 
 		Expect(configStore.Values).To(HaveKeyWithValue(
 			"bosh-password",
 			[]byte("some-bosh-password"),
 		))
+	})
+
+	It("should store a BOSH environment file", func() {
+		Expect(app.Boot(stackName)).To(Succeed())
+
+		Expect(configStore.Values).To(HaveKeyWithValue(
+			"bosh-environment",
+			[]byte(`export BOSH_TARGET="some-elastic-ip"
+export BOSH_USER="admin"
+export BOSH_PASSWORD="some-bosh-password"`)))
 	})
 
 	It("should upsert the Concourse cloudformation stack", func() {
@@ -335,6 +344,15 @@ var _ = Describe("Up", func() {
 	Context("when storing the BOSH password fails", func() {
 		It("should return an error", func() {
 			configStore.Errors["bosh-password"] = errors.New("some error")
+
+			Expect(app.Boot(stackName)).To(MatchError("some error"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Downloading the concourse manifest"))
+		})
+	})
+
+	Context("when storing the BOSH environment fails", func() {
+		It("should return an error", func() {
+			configStore.Errors["bosh-environment"] = errors.New("some error")
 
 			Expect(app.Boot(stackName)).To(MatchError("some error"))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Downloading the concourse manifest"))

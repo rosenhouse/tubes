@@ -28,19 +28,14 @@ Pull requests are welcome.  Here's how to get started:
  ./scripts/get-dependencies
  ```
 
-3. Build the binary (optional)
- ```bash
- go build
- ```
- 
-4. Run the offline test suite
+3. Run the offline test suite
  ```bash
  ./scripts/test-offline
  ```
  
-5. Run the online test suite (optional)
+4. Run the online test suite (optional)
 
- Requires AWS account region & credentials in your environment.
+ Requires AWS account region & credentials in your environment.  Takes a while, as it creates real resources on AWS.
  
  ```bash
  ./scripts/test-full  # WARNING: this uses a REAL AWS account and will cost you real money.

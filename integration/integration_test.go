@@ -1,28 +1,22 @@
 package integration_test
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 
-	"gopkg.in/yaml.v2"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/cloudformation"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
 	"github.com/rosenhouse/tubes/integration"
 )
 
-var _ = Describe("Integration (mocking out AWS)", func() {
+var _ = Describe("Basic workflow", func() {
 	var (
 		stackName  string
 		envVars    map[string]string
@@ -93,30 +87,6 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 		})
 
-		defaultStateDir := filepath.Join(workingDir, "environments", stackName)
-		By("storing the SSH key on the filesystem", func() {
-			Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "ssh-key"))).To(ContainSubstring("RSA PRIVATE KEY"))
-		})
-		By("storing the BOSH IP on the filesystem", func() {
-			Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "bosh-ip"))).To(Equal([]byte("192.168.12.13")))
-		})
-		By("storing the BOSH admin password on the filesystem", func() {
-			Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "bosh-password"))).To(HaveLen(12))
-		})
-
-		By("exposing the SSH key", func() {
-			session := start("-n", stackName, "show", "--ssh")
-
-			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
-
-			pemBlock, _ := pem.Decode(session.Out.Contents())
-			Expect(pemBlock).NotTo(BeNil())
-			Expect(pemBlock.Type).To(Equal("RSA PRIVATE KEY"))
-
-			_, err := x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
 		By("exposing the director IP", func() {
 			session := start("-n", stackName, "show", "--bosh-ip")
 
@@ -133,63 +103,6 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			Expect(session.Out.Contents()).To(HaveLen(12))
 		})
 
-		By("supporting an explicit state directory, rather than the implicit subdirectory of the working directory", func() {
-			session := start("-n", stackName, "--state-dir", defaultStateDir, "show", "--ssh")
-
-			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
-
-			pemBlock, _ := pem.Decode(session.Out.Contents())
-			Expect(pemBlock).NotTo(BeNil())
-			Expect(pemBlock.Type).To(Equal("RSA PRIVATE KEY"))
-		})
-
-		By("storing a generated BOSH director manifest in the state directory", func() {
-			directorYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "director.yml"))
-			Expect(err).NotTo(HaveOccurred())
-
-			var directorYAML struct {
-				Networks []struct {
-					Subnets []struct {
-						Cloud_Properties struct {
-							Subnet string
-						}
-					}
-				}
-				Cloud_Provider struct {
-					MBus       string
-					SSH_Tunnel struct {
-						Host string
-					}
-					Properties struct {
-						AWS struct {
-							Access_Key_ID           string
-							Secret_Access_Key       string
-							Default_Security_Groups []string
-						}
-					}
-				}
-			}
-			Expect(yaml.Unmarshal(directorYAMLBytes, &directorYAML)).To(Succeed())
-
-			Expect(directorYAML.Networks[0].Subnets[0].Cloud_Properties.Subnet).To(Equal("subnet-12345"))
-			Expect(directorYAML.Cloud_Provider.SSH_Tunnel.Host).To(Equal("192.168.12.13"))
-			Expect(directorYAML.Cloud_Provider.MBus).To(ContainSubstring("@192.168.12.13:6868"))
-			Expect(directorYAML.Cloud_Provider.Properties.AWS.Access_Key_ID).To(Equal("some-access-key"))
-			Expect(directorYAML.Cloud_Provider.Properties.AWS.Secret_Access_Key).To(Equal("some-secret-key"))
-			Expect(directorYAML.Cloud_Provider.Properties.AWS.Default_Security_Groups[0]).To(Equal("sg-1234"))
-
-			By("ensuring we create fresh credentials for the BOSH director")
-			Expect(directorYAMLBytes).NotTo(ContainSubstring(envVars["AWS_SECRET_ACCESS_KEY"]))
-		})
-
-		By("storing a generated Concourse deployment manifest in the state directory", func() {
-			concourseYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "concourse.yml"))
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(concourseYAMLBytes).To(ContainSubstring("network: concourse"))
-			Expect(concourseYAMLBytes).To(ContainSubstring("availability_zone: &az some-availability-zone"))
-		})
-
 		By("tearing down the environment", func() {
 			session := start("-n", stackName, "down")
 
@@ -201,39 +114,6 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Finished"))
 			Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 		})
-	})
-
-	It("should create a CloudFormation stack for the BOSH director", func() {
-		Expect(fakeAWS.CloudFormation.Stacks).To(HaveLen(0))
-		session := start("-n", stackName, "up")
-
-		Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting base stack"))
-		Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Stack update complete"))
-		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
-		Expect(*fakeAWS.CloudFormation.Stacks[0].StackName).To(Equal(stackName + "-base"))
-	})
-
-	It("should create a CloudFormation stack for Concourse", func() {
-		session := start("-n", stackName, "up")
-		Eventually(session.Err, NormalTimeout).Should(gbytes.Say("Upserting Concourse stack"))
-		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
-		Expect(fakeAWS.CloudFormation.Stacks).To(HaveLen(2))
-		Expect(*fakeAWS.CloudFormation.Stacks[1].StackName).To(Equal(stackName + "-concourse"))
-		Expect(fakeAWS.CloudFormation.Stacks[1].Parameters).To(ContainElement(&cloudformation.Parameter{
-			ParameterKey:   aws.String("AvailabilityZone"),
-			ParameterValue: aws.String("some-availability-zone"),
-		}))
-	})
-
-	It("should generate a Concourse manifest without any template placeholders", func() {
-		session := start("-n", stackName, "up")
-		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
-
-		defaultStateDir := filepath.Join(workingDir, "environments", stackName)
-		concourseYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "concourse.yml"))
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(concourseYAMLBytes).NotTo(ContainSubstring("REPLACE_WITH_"))
 	})
 
 	Context("invalid user input", func() { // fast failing cases
@@ -252,25 +132,6 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
 				Expect(session.Err.Contents()).To(ContainSubstring("Unknown command"))
 				Expect(session.Err.Contents()).To(ContainSubstring("specify one command of: down, show or up"))
-			})
-		})
-
-		Context("when required env vars are missing", func() {
-			It("should print a useful error", func() {
-				delete(envVars, "AWS_SECRET_ACCESS_KEY")
-
-				session := start("-n", stackName, "up")
-
-				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
-				Expect(session.Err).To(gbytes.Say("missing .* AWS config"))
-			})
-		})
-
-		Context("when the stack name is invalid", func() {
-			It("should return a useful error", func() {
-				session := start("-n", "invalid_stack_name", "up")
-				Eventually(session, ErrTimeout).Should(gexec.Exit(1))
-				Expect(session.Err.Contents()).To(ContainSubstring("invalid name: must match pattern"))
 			})
 		})
 	})

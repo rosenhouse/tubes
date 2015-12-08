@@ -35,12 +35,9 @@
             "ConcourseSubnet": {
                 "Type": "AWS::EC2::Subnet",
                 "Properties": {
-                    "VpcId": {
-                        "Ref": "VPCID"
-                    },
-                    "CidrBlock": {
-                        "Ref": "ConcourseSubnetCIDR"
-                    },
+                    "VpcId": { "Ref": "VPCID" },
+                    "CidrBlock": { "Ref": "ConcourseSubnetCIDR" },
+                    "AvailabilityZone": { "Ref": "AvailabilityZone" },
                     "Tags": [
                         {
                             "Value": "Concourse",
@@ -149,6 +146,10 @@
             "PubliclyRoutableSubnetID": {
                 "Type": "String",
                 "Description": "ID of a publicly routable subnet, usually the BOSH subnet from the base stack"
+            },
+            "AvailabilityZone": {
+                "Type": "AWS::EC2::AvailabilityZone::Name",
+                "Description": "Availability zone for Concourse subnet"
             }
         }
 }

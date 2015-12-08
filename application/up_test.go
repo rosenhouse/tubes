@@ -18,12 +18,13 @@ var _ = Describe("Up", func() {
 		awsClient.GetLatestNATBoxAMIIDCall.Returns.AMIID = "some-nat-box-ami-id"
 		awsClient.GetBaseStackResourcesCall.Returns.Resources =
 			awsclient.BaseStackResources{
-				AccountID:     "ping pong",
-				BOSHUser:      "some-bosh-user",
-				NATInstanceID: "some-nat-box-instance-id",
-				VPCID:         "some-vpc-id",
-				BOSHSubnetID:  "some-bosh-subnet-id",
-				BOSHElasticIP: "some-elastic-ip",
+				AccountID:        "ping pong",
+				BOSHUser:         "some-bosh-user",
+				NATInstanceID:    "some-nat-box-instance-id",
+				VPCID:            "some-vpc-id",
+				BOSHSubnetID:     "some-bosh-subnet-id",
+				BOSHElasticIP:    "some-elastic-ip",
+				AvailabilityZone: "some-availability-zone",
 			}
 		awsClient.CreateAccessKeyCall.Returns.AccessKey = "some-access-key"
 		awsClient.CreateAccessKeyCall.Returns.SecretKey = "some-secret-key"
@@ -152,6 +153,7 @@ var _ = Describe("Up", func() {
 			"VPCID":                    "some-vpc-id",
 			"NATInstance":              "some-nat-box-instance-id",
 			"PubliclyRoutableSubnetID": "some-bosh-subnet-id",
+			"AvailabilityZone":         "some-availability-zone",
 		}))
 	})
 
@@ -200,7 +202,7 @@ var _ = Describe("Up", func() {
 				" elbs: [REPLACE_WITH_WEB_ELB_NAME]")
 		awsClient.GetBaseStackResourcesCall.Returns.Resources.AWSRegion = "some-region"
 		Expect(app.Boot(stackName)).To(Succeed())
-		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("availability_zone: &az some-region"))
+		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("availability_zone: &az some-availability-zone"))
 		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("password: some-db-password"))
 		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("security_groups: [some-concourse-security-group-id]"))
 		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("subnet: some-concourse-subnet"))

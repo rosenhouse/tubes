@@ -12,6 +12,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudformation"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -185,7 +187,7 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(concourseYAMLBytes).To(ContainSubstring("network: concourse"))
-			Expect(concourseYAMLBytes).To(ContainSubstring("us-west-2"))
+			Expect(concourseYAMLBytes).To(ContainSubstring("availability_zone: &az some-availability-zone"))
 		})
 
 		By("tearing down the environment", func() {
@@ -217,6 +219,10 @@ var _ = Describe("Integration (mocking out AWS)", func() {
 		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
 		Expect(fakeAWS.CloudFormation.Stacks).To(HaveLen(2))
 		Expect(*fakeAWS.CloudFormation.Stacks[1].StackName).To(Equal(stackName + "-concourse"))
+		Expect(fakeAWS.CloudFormation.Stacks[1].Parameters).To(ContainElement(&cloudformation.Parameter{
+			ParameterKey:   aws.String("AvailabilityZone"),
+			ParameterValue: aws.String("some-availability-zone"),
+		}))
 	})
 
 	It("should generate a Concourse manifest without any template placeholders", func() {

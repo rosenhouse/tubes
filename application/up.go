@@ -110,6 +110,7 @@ func (a *Application) Boot(stackName string) error {
 			"VPCID":                    baseStackResources.VPCID,
 			"NATInstance":              baseStackResources.NATInstanceID,
 			"PubliclyRoutableSubnetID": baseStackResources.BOSHSubnetID,
+			"AvailabilityZone":         baseStackResources.AvailabilityZone,
 		})
 	if err != nil {
 		return err
@@ -137,7 +138,7 @@ func (a *Application) Boot(stackName string) error {
 	filledInConcourseTemplate := strings.Replace(
 		string(concourseManifestYAMLTemplate),
 		"REPLACE_WITH_AVAILABILITY_ZONE",
-		baseStackResources.AWSRegion,
+		baseStackResources.AvailabilityZone,
 		-1)
 
 	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,

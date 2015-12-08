@@ -28,6 +28,10 @@ var ConcourseStackTemplate = Template{
 			Type:        "String",
 			Description: "ID of a publicly routable subnet, usually the BOSH subnet from the base stack",
 		},
+		"AvailabilityZone": Parameter{
+			Type:        "AWS::EC2::AvailabilityZone::Name",
+			Description: "Availability zone for Concourse subnet",
+		},
 	},
 	Resources: map[string]Resource{
 		"ConcourseSecurityGroup": {
@@ -56,9 +60,10 @@ var ConcourseStackTemplate = Template{
 		"ConcourseSubnet": {
 			Type: "AWS::EC2::Subnet",
 			Properties: map[string]interface{}{
-				"VpcId":     Ref("VPCID"),
-				"CidrBlock": Ref("ConcourseSubnetCIDR"),
-				"Tags":      []Tag{{Key: "Name", Value: "Concourse"}},
+				"VpcId":            Ref("VPCID"),
+				"AvailabilityZone": Ref("AvailabilityZone"),
+				"CidrBlock":        Ref("ConcourseSubnetCIDR"),
+				"Tags":             []Tag{{Key: "Name", Value: "Concourse"}},
 			},
 		},
 		"ConcourseOutboundRoute": {

@@ -62,6 +62,7 @@ func (f *FakeCloudFormation) CreateStack(input *cloudformation.CreateStackInput)
 		StackName:   input.StackName,
 		StackId:     newStackId,
 		StackStatus: aws.String("CREATE_COMPLETE"),
+		Parameters:  input.Parameters,
 	}
 	f.Stacks = append(f.Stacks, newStack)
 

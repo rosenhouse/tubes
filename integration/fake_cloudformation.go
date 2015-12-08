@@ -106,7 +106,7 @@ func (f *FakeCloudFormation) DescribeStackResources(input *cloudformation.Descri
 				StackId:            aws.String(stackID),
 			},
 			&cloudformation.StackResource{
-				LogicalResourceId:  aws.String("MicroEIP"),
+				LogicalResourceId:  aws.String("BOSHDirectorIP"),
 				PhysicalResourceId: aws.String("192.168.12.13"),
 				StackId:            aws.String(stackID),
 			},

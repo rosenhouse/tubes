@@ -50,9 +50,9 @@ func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, er
 	if !ok {
 		return resources, errors.New("missing stack resource BOSHSecurityGroup")
 	}
-	resources.BOSHElasticIP, ok = mapping["MicroEIP"]
+	resources.BOSHElasticIP, ok = mapping["BOSHDirectorIP"]
 	if !ok {
-		return resources, errors.New("missing stack resource MicroEIP")
+		return resources, errors.New("missing stack resource BOSHDirectorIP")
 	}
 	resources.BOSHUser, ok = mapping["BOSHDirectorUser"]
 	if !ok {

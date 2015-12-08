@@ -53,7 +53,7 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 			StackResources: []*cloudformation.StackResource{
 				newResource("BOSHSecurityGroup", "sg-12345"),
 				newResource("BOSHSubnet", "subnet-12345"),
-				newResource("MicroEIP", "54.123.456.78"),
+				newResource("BOSHDirectorIP", "54.123.456.78"),
 				newResource("NATEIP", "nat-eip-ignore-this"),
 				newResource("NATSecurityGroup", "nat-security-group-ignore-this"),
 				newResource("PrivateSubnet", "private-subnet-ignore-this-for-now"),

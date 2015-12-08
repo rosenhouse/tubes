@@ -198,7 +198,7 @@ var BaseStackTemplate = Template{
 				"Tags":      []Tag{{Key: "Name", Value: "BOSH"}},
 			},
 		},
-		"MicroEIP": {
+		"BOSHDirectorIP": {
 			Type: "AWS::EC2::EIP",
 			Properties: map[string]interface{}{
 				"Domain": "vpc",

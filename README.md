@@ -64,12 +64,10 @@ Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are s
  ```
  This boots 2 CloudFormation stacks, a "base" stack to support a BOSH director, and a "Concourse" stack with dedicated subnet and Elastic LoadBalancer.  It generates deployment manifests in `$PWD/environments/my-environment`
  
-4. Manually `bosh-init` the director
+4. Manually `bosh-init` the director and get the director UUID
  ```bash
  bosh-init deploy environments/my-environment/director.yml
- export BOSH_USER=admin
- export BOSH_PASSWORD="$(tubes -n my-environment show --bosh-password)"
- export BOSH_TARGET="$(tubes -n my-environment show --bosh-ip)"
+ eval `tubes -n my-environment show --bosh-environment`
  bosh -t $BOSH_TARGET status --uuid
  ```
 
@@ -84,7 +82,6 @@ Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are s
 ## What's next (maybe)
 - Automate more of the Concourse deployment workflow
 - Refactor manifest generation code, there's lots of incidental complexity in there at the moment
-- Refactor the integration tests for better readability
 - Idempotent upsert, using data in state directory (see below)
 - Optional hosted zone: DNS for everything
 - Add SSL for Concourse, maybe with Let's Encrypt?

@@ -1,0 +1,21 @@
+[submodule "vendor/github.com/aws/aws-sdk-go"]
+	path = vendor/github.com/aws/aws-sdk-go
+	url = git://github.com/aws/aws-sdk-go
+[submodule "vendor/github.com/awslabs/aws-cfn-go-template"]
+	path = vendor/github.com/awslabs/aws-cfn-go-template
+	url = git://github.com/awslabs/aws-cfn-go-template
+[submodule "vendor/github.com/jessevdk/go-flags"]
+	path = vendor/github.com/jessevdk/go-flags
+	url = git://github.com/jessevdk/go-flags
+[submodule "vendor/github.com/onsi/ginkgo"]
+	path = vendor/github.com/onsi/ginkgo
+	url = git://github.com/onsi/ginkgo
+[submodule "vendor/github.com/onsi/gomega"]
+	path = vendor/github.com/onsi/gomega
+	url = git://github.com/onsi/gomega
+[submodule "vendor/github.com/rosenhouse/awsfaker"]
+	path = vendor/github.com/rosenhouse/awsfaker
+	url = git://github.com/rosenhouse/awsfaker
+[submodule "vendor/gopkg.in/yaml.v2"]
+	path = vendor/gopkg.in/yaml.v2
+	url = git://github.com/go-yaml/yaml

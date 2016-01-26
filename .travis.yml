@@ -1,9 +1,7 @@
 language: go
 
 go:
-  - 1.5
-
-install: ./scripts/get-dependencies
+  - 1.5.3
 
 script: ./scripts/test-offline
 

@@ -3,7 +3,9 @@ language: go
 go:
   - 1.5.3
 
-install: ""
+install:
+  - go install ./vendor/github.com/onsi/ginkgo/ginkgo
+
 script: ./scripts/test-offline
 
 env:

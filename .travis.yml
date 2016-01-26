@@ -6,3 +6,6 @@ go:
 install: ./scripts/get-dependencies
 
 script: ./scripts/test-offline
+
+env:
+- GO15VENDOREXPERIMENT=1

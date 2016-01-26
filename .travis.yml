@@ -3,6 +3,7 @@ language: go
 go:
   - 1.5.3
 
+install: ""
 script: ./scripts/test-offline
 
 env:

@@ -16,7 +16,7 @@ var BaseStackTemplate = Template{
 		},
 		"NATInstanceType": Parameter{
 			Type:        "String",
-			Default:     "t2.small",
+			Default:     "t2.large",
 			Description: "EC2 instance type for NAT instance",
 		},
 		"BOSHInboundCIDR": Parameter{

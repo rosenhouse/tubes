@@ -262,7 +262,7 @@
                 "Description": "CIDR block for the VPC."
             },
             "NATInstanceType": {
-                "Default": "t2.small",
+                "Default": "t2.large",
                 "Type": "String",
                 "Description": "EC2 instance type for NAT instance"
             },

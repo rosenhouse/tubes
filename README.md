@@ -28,11 +28,11 @@ Pull requests are welcome.  Here's how to get started:
  ```bash
  ./scripts/test-offline
  ```
- 
+
 3. Run the online test suite (optional)
 
  Requires AWS account region & credentials in your environment.  Takes a while, as it creates real resources on AWS.
- 
+
  ```bash
  ./scripts/test-full  # WARNING: this uses a REAL AWS account and will cost you real money.
  ```
@@ -45,7 +45,7 @@ Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are s
  ```bash
  go install github.com/rosenhouse/tubes
  ```
- 
+
 2. Set your AWS environment variables
  ```bash
  AWS_DEFAULT_REGION=us-west-2
@@ -56,10 +56,13 @@ Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are s
 3. Boot a new environment named `my-environment`
  ```bash
  tubes -n my-environment up
- 
+
  ```
  This boots 2 CloudFormation stacks, a "base" stack to support a BOSH director, and a "Concourse" stack with dedicated subnet and Elastic LoadBalancer.  It generates deployment manifests in `$PWD/environments/my-environment`
- 
+
+## Things you can do manually
+*things to automate eventually ...*
+
 4. Manually `bosh-init` the director and get the director UUID
  ```bash
  bosh-init deploy environments/my-environment/director.yml
@@ -71,58 +74,5 @@ Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are s
  ```bash
  vim environments/my-environment/concourse.yml  # add the UUID at the top
  ```
- 
+
 5. Manually lookup the latest versions of Concourse & Garden Linux release, upload to the director, and deploy Concourse.
-
-
-## What's next (maybe)
-- Automate more of the Concourse deployment workflow
-- Refactor manifest generation code, there's lots of incidental complexity in there at the moment
-- Idempotent upsert, using data in state directory (see below)
-- Optional hosted zone: DNS for everything
-- Add SSL for Concourse, maybe with Let's Encrypt?
-- Feature to rotate credentials?
-- Deploy CF, somehow?
-- Keep a log somewhere, for auditing?
-- Generate a pipeline that idempotently deploys a CF on AWS
-- Separate binaries for separate steps (package some as Concourse resources?)
-  - CloudFormation resource supporting both `in` and `out`
-  - Credential-generation
-- For newbies: no ruby required, instead `ssh` to the NAT box and uses it as a bastion to run `bosh-init deploy` and `bosh deploy`
-- For the paranoid: No external IP for the BOSH director, all access via bastion.
-
-### Idempotency user stories
-
-```
-- Given the state directory is empty
-- and there are no cloud resources
-- When I run `up`
-- Then I get a new stack and the state directory is updated
-
-- Given the state directory is empty
-- and there are no cloud resources
-- When I run any other command
-- Then I get an error
-
-- Given the state directory is empty
-- and there are some cloud resources
-- When I run any command
-- Then I get an error
-
-- Given the state directory has content
-- and there are no cloud resources
-- When I run `up`
-- Then the cloud resources get re-created and the state directory updated
-- updated ips and ids are saved
-
-- Given the state directory has content
-- and there are no cloud resources
-- When I run any other command
-- Then I get an error
-
-- Given the state directory has content
-- And there are some cloud resources
-- And there are no mismatches between them
-- When I run any command
-- Then it succeeds idempotently, updating both
-```

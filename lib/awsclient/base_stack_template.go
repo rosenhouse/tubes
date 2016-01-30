@@ -157,6 +157,7 @@ var BaseStackTemplate = Template{
 					"mkdir -p /usr/local/bin",
 					"curl -L -o /usr/local/bin/bosh-init https://s3.amazonaws.com/bosh-init-artifacts/bosh-init-0.0.81-linux-amd64",
 					"chmod +x /usr/local/bin/bosh-init",
+					"su -c 'gem install bosh_cli --no-ri --no-rdoc' ec2-user",
 				)),
 			},
 		},

@@ -4,7 +4,8 @@
 **work in progress + side project == be careful**
 
 ## Huh?
-A CLI tool that simplifies the creation of CF development environments on AWS
+A CLI tool that automates the creation of CloudFoundry development environments on AWS
+*Given I have AWS account credentials, when I run `tubes`, then I get a BOSH director & Concourse deployment*
 
 ## Goals
 - Automate as much as possible

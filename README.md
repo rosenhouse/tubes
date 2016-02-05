@@ -65,16 +65,28 @@ Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are s
 ## Things you can do manually
 *things to automate eventually ...*
 
-4. Manually `bosh-init` the director and get the director UUID
+4. Manually `bosh-init` the director
  ```bash
- bosh-init deploy environments/my-environment/director.yml
- eval `tubes -n my-environment show --bosh-environment`
+ cd environments/my-environment
+ source bosh-environment
+ scp -i ssh-key ./* ec2-user@$NAT_IP:~/
+ ssh -i ssh-key ec2-user@$NAT_IP "bosh-init deploy director.yml"
+ scp -i ssh-key ec2-user@$NAT_IP:~/director-state.json ./
+ ```
+ or to run the deploy in a detached screen that survives hangups, try
+ ```
+ ssh -i ssh-key ec2-user@$NAT_IP "screen -S setup -d -m bosh-init deploy director.yml"
+ ```
+ instead.  In that case you'll need to wait for it to finish before copying the `director-state.json` file back down to your local box.
+ 
+5. Target the new bosh director
+ ```
  bosh -t $BOSH_TARGET status --uuid
  ```
 
-5. Manually edit the partially-generated Concourse deployment manifest
+6. Manually edit the partially-generated Concourse deployment manifest
  ```bash
  vim environments/my-environment/concourse.yml  # add the UUID at the top
  ```
 
-5. Manually lookup the latest versions of Concourse & Garden Linux release, upload to the director, and deploy Concourse.
+7. Manually lookup the latest versions of Concourse & Garden Linux release, upload to the director, and deploy Concourse.

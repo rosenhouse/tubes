@@ -12,7 +12,7 @@ fi
 
 ginkgo \
   $ginkgo_opts \
-  -skipPackage acceptance,aws_enemy,integration
+  -skipPackage vendor,acceptance,aws_enemy,integration
 
 ginkgo \
   $ginkgo_opts \

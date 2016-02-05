@@ -1,7 +1,6 @@
 # todos
 
 ## small tasks
-- store the NAT box IP, so user can SSH to it easily
 - generate a log
 
 ## medium tasks

@@ -54,7 +54,7 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 				newResource("BOSHSecurityGroup", "sg-12345"),
 				newResource("BOSHSubnet", "subnet-12345"),
 				newResource("BOSHDirectorIP", "54.123.456.78"),
-				newResource("NATEIP", "nat-eip-ignore-this"),
+				newResource("NATEIP", "some-nat-elastic-ip"),
 				newResource("NATSecurityGroup", "nat-security-group-ignore-this"),
 				newResource("PrivateSubnet", "private-subnet-ignore-this-for-now"),
 				newResource("BOSHDirectorUser", "some-iam-user"),
@@ -87,6 +87,7 @@ var _ = Describe("Retrieving resource info for the base stack", func() {
 			BOSHUser:          "some-iam-user",
 			AWSRegion:         "some-region",
 			NATInstanceID:     "some-nat-box-instance-id",
+			NATElasticIP:      "some-nat-elastic-ip",
 			VPCID:             "some-vpc-id",
 		}))
 	})

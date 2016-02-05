@@ -18,6 +18,7 @@ type BaseStackResources struct {
 	BOSHUser          string
 	AWSRegion         string
 	NATInstanceID     string
+	NATElasticIP      string
 	VPCID             string
 }
 
@@ -61,6 +62,10 @@ func (c *Client) GetBaseStackResources(stackName string) (BaseStackResources, er
 	resources.NATInstanceID, ok = mapping["NATInstance"]
 	if !ok {
 		return resources, errors.New("missing stack resource NATInstance")
+	}
+	resources.NATElasticIP, ok = mapping["NATEIP"]
+	if !ok {
+		return resources, errors.New("missing stack resource NATEIP")
 	}
 	resources.VPCID, ok = mapping["VPC"]
 	if !ok {

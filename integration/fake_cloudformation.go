@@ -121,6 +121,11 @@ func (f *FakeCloudFormation) DescribeStackResources(input *cloudformation.Descri
 				StackId:            aws.String(stackID),
 			},
 			&cloudformation.StackResource{
+				LogicalResourceId:  aws.String("NATEIP"),
+				PhysicalResourceId: aws.String("some-nat-elastic-ip"),
+				StackId:            aws.String(stackID),
+			},
+			&cloudformation.StackResource{
 				LogicalResourceId:  aws.String("VPC"),
 				PhysicalResourceId: aws.String("some-vpc-id"),
 				StackId:            aws.String(stackID),

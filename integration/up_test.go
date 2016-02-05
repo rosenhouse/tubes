@@ -105,6 +105,7 @@ var _ = Describe("Up action", func() {
 		})
 		By("storing a bash script than can be sourced to get env vars", func() {
 			Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "bosh-environment"))).To(ContainSubstring("export BOSH_TARGET="))
+			Expect(ioutil.ReadFile(filepath.Join(defaultStateDir, "bosh-environment"))).To(ContainSubstring("export NAT_IP="))
 		})
 
 		By("storing a generated BOSH director manifest in the state directory", func() {

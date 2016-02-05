@@ -21,6 +21,7 @@ var _ = Describe("Up", func() {
 				AccountID:        "ping pong",
 				BOSHUser:         "some-bosh-user",
 				NATInstanceID:    "some-nat-box-instance-id",
+				NATElasticIP:     "some-nat-box-elastic-ip",
 				VPCID:            "some-vpc-id",
 				BOSHSubnetID:     "some-bosh-subnet-id",
 				BOSHElasticIP:    "some-elastic-ip",
@@ -91,12 +92,16 @@ var _ = Describe("Up", func() {
 		Expect(awsClient.GetBaseStackResourcesCall.Receives.StackName).To(Equal(stackName + "-base"))
 	})
 
-	It("should store the BOSH IP in the config store", func() {
+	It("should store the BOSH IP and NAT box IP in the config store", func() {
 		Expect(app.Boot(stackName)).To(Succeed())
 
 		Expect(configStore.Values).To(HaveKeyWithValue(
 			"bosh-ip",
 			[]byte("some-elastic-ip")))
+
+		Expect(configStore.Values).To(HaveKeyWithValue(
+			"nat-ip",
+			[]byte("some-nat-box-elastic-ip")))
 	})
 
 	It("should create an access key for the BOSH user", func() {
@@ -141,7 +146,8 @@ var _ = Describe("Up", func() {
 			"bosh-environment",
 			[]byte(`export BOSH_TARGET="some-elastic-ip"
 export BOSH_USER="admin"
-export BOSH_PASSWORD="some-bosh-password"`)))
+export BOSH_PASSWORD="some-bosh-password"
+export NAT_IP="some-nat-box-elastic-ip"`)))
 	})
 
 	It("should upsert the Concourse cloudformation stack", func() {

@@ -74,6 +74,11 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 
+	err = a.ConfigStore.Set("nat-ip", []byte(baseStackResources.NATElasticIP))
+	if err != nil {
+		return err
+	}
+
 	a.Logger.Println("Generating BOSH init manifest")
 
 	accessKey, secretKey, err := a.AWSClient.CreateAccessKey(baseStackResources.BOSHUser)
@@ -90,6 +95,7 @@ func (a *Application) Boot(stackName string) error {
 		fmt.Sprintf(`export BOSH_TARGET="%s"`, baseStackResources.BOSHElasticIP),
 		fmt.Sprintf(`export BOSH_USER="%s"`, "admin"),
 		fmt.Sprintf(`export BOSH_PASSWORD="%s"`, boshPassword),
+		fmt.Sprintf(`export NAT_IP="%s"`, baseStackResources.NATElasticIP),
 	}
 	err = a.ConfigStore.Set("bosh-environment", []byte(strings.Join(boshEnvLines, "\n")))
 	if err != nil {

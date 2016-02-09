@@ -49,7 +49,7 @@ var _ = BeforeSuite(func() {
 	rand.Seed(config.GinkgoConfig.RandomSeed)
 
 	var err error
-	pathToCLI, err = gexec.Build("github.com/rosenhouse/tubes")
+	pathToCLI, err = gexec.Build("github.com/rosenhouse/tubes/cmd/tubes")
 	Expect(err).NotTo(HaveOccurred())
 })
 

@@ -45,7 +45,7 @@ Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are s
 
 1. Install for easy access
  ```bash
- go install github.com/rosenhouse/tubes
+ go install github.com/rosenhouse/tubes/cmd/tubes
  ```
 
 2. Set your AWS environment variables

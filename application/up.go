@@ -10,10 +10,6 @@ import (
 
 const StackNamePattern = `^[a-zA-Z][-a-zA-Z0-9]*$`
 
-type ConcourseCredentials struct {
-	DBPassword string
-}
-
 func (a *Application) Boot(stackName string) error {
 	regex := regexp.MustCompile(StackNamePattern)
 	if !regex.MatchString(stackName) {
@@ -112,13 +108,6 @@ func (a *Application) Boot(stackName string) error {
 		return err
 	}
 
-	a.Logger.Println("Downloading the concourse manifest from " + a.ConcourseTemplateURL)
-
-	concourseManifestYAMLTemplate, err := a.HTTPClient.Get(a.ConcourseTemplateURL)
-	if err != nil {
-		return err
-	}
-
 	concourseTemplateJSON := awsclient.ConcourseStackTemplate.String()
 	a.Logger.Println("Upserting Concourse stack.  Check CloudFormation console for details.")
 	err = a.AWSClient.UpsertStack(
@@ -143,46 +132,14 @@ func (a *Application) Boot(stackName string) error {
 		panic(err)
 	}
 
-	a.Logger.Println("Generating the concourse manifest")
+	a.Logger.Println("Generating the concourse cloud config")
 
-	concourseCredentials := ConcourseCredentials{}
-	err = a.CredentialsGenerator.Fill(&concourseCredentials)
+	concourseCloudConfig, err := a.CloudConfigGenerator.Generate(concourseStackResources)
 	if err != nil {
 		return err
 	}
 
-	filledInConcourseTemplate := strings.Replace(
-		string(concourseManifestYAMLTemplate),
-		"REPLACE_WITH_AVAILABILITY_ZONE",
-		baseStackResources.AvailabilityZone,
-		-1)
-
-	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
-		"REPLACE_WITH_DB_PASSWORD",
-		concourseCredentials.DBPassword,
-		-1)
-
-	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
-		"REPLACE_WITH_INTERNAL_SECURITY_GROUP_NAME",
-		concourseStackResources["ConcourseSecurityGroup"],
-		-1)
-
-	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
-		"REPLACE_WITH_INTERNAL_SUBNET",
-		concourseStackResources["ConcourseSubnet"],
-		-1)
-
-	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
-		"REPLACE_WITH_WEB_ELB_NAME",
-		concourseStackResources["LoadBalancer"],
-		-1)
-
-	filledInConcourseTemplate = strings.Replace(filledInConcourseTemplate,
-		"REPLACE_WITH_UUID",
-		"YOUR_DIRECTOR_UUID_HERE",
-		-1)
-
-	err = a.ConfigStore.Set("concourse.yml", []byte(filledInConcourseTemplate))
+	err = a.ConfigStore.Set("cloud-config.yml", []byte(concourseCloudConfig))
 	if err != nil {
 		return err
 	}

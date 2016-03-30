@@ -41,6 +41,10 @@ type httpClient interface {
 	Get(path string) ([]byte, error)
 }
 
+type cloudConfigGenerator interface {
+	Generate(resources map[string]string) ([]byte, error)
+}
+
 type Application struct {
 	AWSClient            awsClient
 	StateDir             string
@@ -49,6 +53,6 @@ type Application struct {
 	ConfigStore          configStore
 	ManifestBuilder      manifestBuilder
 	HTTPClient           httpClient
-	ConcourseTemplateURL string
 	CredentialsGenerator credentialsGenerator
+	CloudConfigGenerator cloudConfigGenerator
 }

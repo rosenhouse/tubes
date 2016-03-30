@@ -12,6 +12,7 @@ import (
 	"github.com/rosenhouse/tubes/application"
 	"github.com/rosenhouse/tubes/lib/awsclient"
 	"github.com/rosenhouse/tubes/lib/boshio"
+	"github.com/rosenhouse/tubes/lib/cloudconfig"
 	"github.com/rosenhouse/tubes/lib/credentials"
 	"github.com/rosenhouse/tubes/lib/director"
 	"github.com/rosenhouse/tubes/lib/webclient"
@@ -120,7 +121,7 @@ func (options *CLIOptions) InitApp(args []string) (*application.Application, err
 		ConfigStore:          configStore,
 		HTTPClient:           &webclient.HTTPClient{},
 		CredentialsGenerator: credentialsGenerator,
-		ConcourseTemplateURL: options.ConcourseManifestTemplateURL,
+		CloudConfigGenerator: &cloudconfig.Generator{},
 		ManifestBuilder: &application.ManifestBuilder{
 			DirectorManifestGenerator: director.DirectorManifestGenerator{},
 			BoshIOClient: &boshio.Client{

@@ -7,8 +7,7 @@ type CLIOptions struct {
 	AWSConfig AWSConfig `group:"aws"`
 	StateDir  string    `short:"s" long:"state-dir" description:"Path to directory where state is stored.  Typically you'd track this in a private git repository or other secure location.  Defaults to <working_dir>/environments/<name>"`
 
-	ConcourseManifestTemplateURL string `long:"concourse-manifest-template-url" default:"https://raw.githubusercontent.com/concourse/concourse/master/manifests/aws-vpc.yml" env:"TUBES_CONCOURSE_MANIFEST_TEMPLATE_URL" description:"URL of BOSH deployment manifest template for Concourse.  Override for testing."`
-	BoshIOURL                    string `long:"bosh-io-url" default:"https://bosh.io" env:"TUBES_BOSH_IO_URL" description:"URL of BOSH hub.  Override for testing."`
+	BoshIOURL string `long:"bosh-io-url" default:"https://bosh.io" env:"TUBES_BOSH_IO_URL" description:"URL of BOSH hub.  Override for testing."`
 
 	Up   Up   `command:"up" description:"Boot a new environment with the given name"`
 	Down Down `command:"down" description:"Tear down the named environment"`

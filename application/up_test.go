@@ -3,7 +3,6 @@ package application_test
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,11 +29,6 @@ var _ = Describe("Up", func() {
 		awsClient.CreateAccessKeyCall.Returns.AccessKey = "some-access-key"
 		awsClient.CreateAccessKeyCall.Returns.SecretKey = "some-secret-key"
 
-		credentialsGenerator.FillCallback = func(toFill interface{}) error {
-			f := toFill.(*application.ConcourseCredentials)
-			f.DBPassword = "some-db-password"
-			return nil
-		}
 		awsClient.GetStackResourcesCalls = make([]mocks.GetStackResourcesCall, 1)
 		awsClient.GetStackResourcesCalls[0].Returns.Resources = map[string]string{
 			"ConcourseSecurityGroup": "some-concourse-security-group-id",
@@ -42,6 +36,7 @@ var _ = Describe("Up", func() {
 			"LoadBalancer":           "some-concourse-elb",
 		}
 		manifestBuilder.BuildCall.Returns.AdminPassword = "some-bosh-password"
+		cloudConfigGenerator.GenerateCall.Returns.Bytes = []byte("some-cloud-config")
 	})
 
 	It("should create a new ssh keypair", func() {
@@ -68,8 +63,7 @@ var _ = Describe("Up", func() {
 		Expect(logBuffer).To(gbytes.Say("Upserting base stack.  Check CloudFormation console for details."))
 		Expect(logBuffer).To(gbytes.Say("Stack update complete"))
 		Expect(logBuffer).To(gbytes.Say("Generating BOSH init manifest"))
-		Expect(logBuffer).To(gbytes.Say("Downloading the concourse manifest from " + app.ConcourseTemplateURL))
-		Expect(logBuffer).To(gbytes.Say("Generating the concourse manifest"))
+		Expect(logBuffer).To(gbytes.Say("Generating the concourse cloud config"))
 		Expect(logBuffer).To(gbytes.Say("Finished"))
 
 		Expect(awsClient.UpsertStackCalls[0].Receives.StackName).To(Equal(stackName + "-base"))
@@ -158,7 +152,7 @@ export NAT_IP="some-nat-box-elastic-ip"`)))
 		Expect(logBuffer).To(gbytes.Say("Upserting Concourse stack.  Check CloudFormation console for details."))
 		Expect(logBuffer).To(gbytes.Say("Stack update complete"))
 		Expect(logBuffer).To(gbytes.Say("Retrieving resource ids"))
-		Expect(logBuffer).To(gbytes.Say("Generating the concourse manifest"))
+		Expect(logBuffer).To(gbytes.Say("Generating the concourse cloud config"))
 		Expect(logBuffer).To(gbytes.Say("Finished"))
 
 		Expect(awsClient.UpsertStackCallCount).To(Equal(2))
@@ -185,44 +179,10 @@ export NAT_IP="some-nat-box-elastic-ip"`)))
 		Expect(awsClient.GetStackResourcesCalls[0].Receives.StackName).To(Equal(stackName + "-concourse"))
 	})
 
-	It("should get the concourse manifest template", func() {
-		manifestTemplate := fmt.Sprintf("some-manifest-bytes-%x", rand.Int31())
-		httpClient.GetCall.Returns.Body = []byte(manifestTemplate + " REPLACE_WITH_AVAILABILITY_ZONE ")
+	It("should generate the cloud config for concourse and store it", func() {
 		Expect(app.Boot(stackName)).To(Succeed())
-
-		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring(manifestTemplate))
-
-		Expect(httpClient.GetCall.Receives.Path).To(Equal(app.ConcourseTemplateURL))
-	})
-
-	It("should replace all placeholders in the concourse manifest template", func() {
-		httpClient.GetCall.Returns.Body = []byte(" REPLACE_WITH_AVAILABILITY_ZONE" +
-			" REPLACE_WITH_UUID" +
-			" REPLACE_WITH_DB_PASSWORD" +
-			" REPLACE_WITH_INTERNAL_SECURITY_GROUP_NAME" +
-			" REPLACE_WITH_INTERNAL_SUBNET" +
-			" REPLACE_WITH_WEB_ELB_NAME")
-		awsClient.GetBaseStackResourcesCall.Returns.Resources.AWSRegion = "some-region"
-		Expect(app.Boot(stackName)).To(Succeed())
-		Expect(configStore.Values["concourse.yml"]).NotTo(ContainSubstring("REPLACE_WITH_"))
-	})
-
-	It("should replace placeholders n the concourse manifest template with the correct values", func() {
-		httpClient.GetCall.Returns.Body = []byte(
-			"availability_zone: &az REPLACE_WITH_AVAILABILITY_ZONE" +
-				" password: REPLACE_WITH_DB_PASSWORD" +
-				" director_uuid: REPLACE_WITH_UUID" +
-				" security_groups: [REPLACE_WITH_INTERNAL_SECURITY_GROUP_NAME]" +
-				" subnet: REPLACE_WITH_INTERNAL_SUBNET" +
-				" elbs: [REPLACE_WITH_WEB_ELB_NAME]")
-		awsClient.GetBaseStackResourcesCall.Returns.Resources.AWSRegion = "some-region"
-		Expect(app.Boot(stackName)).To(Succeed())
-		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("availability_zone: &az some-availability-zone"))
-		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("password: some-db-password"))
-		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("security_groups: [some-concourse-security-group-id]"))
-		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("subnet: some-concourse-subnet"))
-		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("elbs: [some-concourse-elb]"))
-		Expect(configStore.Values["concourse.yml"]).To(ContainSubstring("director_uuid: YOUR_DIRECTOR_UUID_HERE"))
+		Expect(cloudConfigGenerator.GenerateCall.Receives.Resources).To(Equal(awsClient.GetStackResourcesCalls[0].Returns.Resources))
+		Expect(configStore.Values["cloud-config.yml"]).To(Equal([]byte("some-cloud-config")))
 	})
 
 	Context("when the stackName contains invalid characters", func() {
@@ -365,15 +325,6 @@ export NAT_IP="some-nat-box-elastic-ip"`)))
 		})
 	})
 
-	Context("when downloading the concourse manifest template returns an error", func() {
-		It("should return an error", func() {
-			httpClient.GetCall.Returns.Error = errors.New("Bad Request")
-
-			Expect(app.Boot(stackName)).To(MatchError("Bad Request"))
-			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Generating the concourse manifest"))
-		})
-	})
-
 	Context("when upserting the Concourse stack returns an error", func() {
 		It("should immediately return the error", func() {
 			awsClient.UpsertStackCalls = make([]mocks.UpsertStackCall, 2)
@@ -395,22 +346,20 @@ export NAT_IP="some-nat-box-elastic-ip"`)))
 		})
 	})
 
-	Context("when storing the Concourse manifest yaml fails", func() {
+	Context("when generating the cloud config fails", func() {
 		It("should return an error", func() {
-			configStore.Errors["concourse.yml"] = errors.New("some concourse manifest storage error")
+			cloudConfigGenerator.GenerateCall.Returns.Error = errors.New("potato")
 
-			Expect(app.Boot(stackName)).To(MatchError("some concourse manifest storage error"))
-			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
+			Expect(app.Boot(stackName)).To(MatchError("potato"))
+			Expect(logBuffer.Contents()).NotTo(ContainSubstring("potato"))
 		})
 	})
 
-	Context("when generating random credentials fails", func() {
+	Context("when storing the Concourse cloud config fails", func() {
 		It("should return an error", func() {
-			credentialsGenerator.FillCallback = func(toFill interface{}) error {
-				return errors.New("filler error (ha ha)")
-			}
+			configStore.Errors["cloud-config.yml"] = errors.New("some-error")
 
-			Expect(app.Boot(stackName)).To(MatchError("filler error (ha ha)"))
+			Expect(app.Boot(stackName)).To(MatchError("some-error"))
 			Expect(logBuffer.Contents()).NotTo(ContainSubstring("Finished"))
 		})
 	})

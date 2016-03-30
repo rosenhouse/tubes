@@ -36,6 +36,7 @@ var (
 	manifestBuilder      *mocks.ManifestBuilder
 	httpClient           *mocks.HTTPClient
 	credentialsGenerator *mocks.CredentialsGenerator
+	cloudConfigGenerator *mocks.CloudConfigGenerator
 )
 
 var _ = BeforeEach(func() {
@@ -44,6 +45,7 @@ var _ = BeforeEach(func() {
 	manifestBuilder = &mocks.ManifestBuilder{}
 	httpClient = &mocks.HTTPClient{}
 	credentialsGenerator = &mocks.CredentialsGenerator{}
+	cloudConfigGenerator = &mocks.CloudConfigGenerator{}
 
 	logBuffer = gbytes.NewBuffer()
 	resultBuffer = gbytes.NewBuffer()
@@ -55,8 +57,8 @@ var _ = BeforeEach(func() {
 		ConfigStore:          configStore,
 		ManifestBuilder:      manifestBuilder,
 		HTTPClient:           httpClient,
-		ConcourseTemplateURL: "concourse_template_url",
 		CredentialsGenerator: credentialsGenerator,
+		CloudConfigGenerator: cloudConfigGenerator,
 	}
 
 	stackName = fmt.Sprintf("some-stack-name-%x", rand.Int31())

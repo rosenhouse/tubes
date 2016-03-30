@@ -147,13 +147,13 @@ var _ = Describe("Up action", func() {
 			Expect(directorYAMLBytes).NotTo(ContainSubstring(envVars["AWS_SECRET_ACCESS_KEY"]))
 		})
 
-		By("storing a generated Concourse deployment manifest in the state directory", func() {
-			concourseYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "concourse.yml"))
-			Expect(err).NotTo(HaveOccurred())
+		// By("storing a generated cloud config in the state directory", func() {
+		// 	cloudConfigBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "cloud-config.yml"))
+		// 	Expect(err).NotTo(HaveOccurred())
 
-			Expect(concourseYAMLBytes).To(ContainSubstring("network: concourse"))
-			Expect(concourseYAMLBytes).To(ContainSubstring("availability_zone: &az some-availability-zone"))
-		})
+		// 	Expect(cloudConfigBytes).To(ContainSubstring("network: concourse"))
+		// 	Expect(cloudConfigBytes).To(ContainSubstring("availability_zone: &az some-availability-zone"))
+		// })
 	})
 
 	It("should create a CloudFormation stack for the BOSH director", func() {
@@ -176,17 +176,6 @@ var _ = Describe("Up action", func() {
 			ParameterKey:   aws.String("AvailabilityZone"),
 			ParameterValue: aws.String("some-availability-zone"),
 		}))
-	})
-
-	It("should generate a Concourse manifest without any template placeholders", func() {
-		session := start("-n", stackName, "up")
-		Eventually(session, NormalTimeout).Should(gexec.Exit(0))
-
-		defaultStateDir := filepath.Join(workingDir, "environments", stackName)
-		concourseYAMLBytes, err := ioutil.ReadFile(filepath.Join(defaultStateDir, "concourse.yml"))
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(concourseYAMLBytes).NotTo(ContainSubstring("REPLACE_WITH_"))
 	})
 
 	Context("invalid user input", func() { // fast failing cases

@@ -4,9 +4,9 @@
 **work in progress + side project == be careful**
 
 ## Huh?
-A CLI tool that automates the creation of CloudFoundry development environments on AWS
+A CLI tool that automates the creation of a BOSH on AWS
 
-*Given I have AWS account credentials, when I run `tubes`, then I get a BOSH director & Concourse deployment*
+**You probably want to look at the [BOSH Bootloader](https://github.com/pivotal-cf-experimental/bosh-bootloader) instead.**
 
 ## Goals
 - Automate as much as possible
@@ -83,10 +83,3 @@ Here's a brief walkthrough.  Run with `-h` flag to see all options.  There are s
  ```
  bosh -t $BOSH_TARGET status --uuid
  ```
-
-6. Manually edit the partially-generated Concourse deployment manifest
- ```bash
- vim environments/my-environment/concourse.yml  # add the UUID at the top
- ```
-
-7. Manually lookup the latest versions of Concourse & Garden Linux release, upload to the director, and deploy Concourse.
